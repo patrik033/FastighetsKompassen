@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastighetsKompassen.Infrastructure\FastighetsKompassen.Infrastructure.csproj" />
+    <ProjectReference Include="..\FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
