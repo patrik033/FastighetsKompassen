@@ -1,23 +1,31 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35514.174 d17.12
+VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "API", "API", "{1369CEAF-9DA1-4012-8AE8-600EA84E5906}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.API", "FastighetsKompassen.API\FastighetsKompassen.API.csproj", "{C26BB103-4227-4DB1-BBEE-F380C678BF4A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastighetsKompassen.API", "FastighetsKompassen.API\FastighetsKompassen.API.csproj", "{C26BB103-4227-4DB1-BBEE-F380C678BF4A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{737EB165-B9C4-43E8-9525-134920A6948D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{98EC2A2B-325D-4FB6-89D4-EF8FC64FD0F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.Kommuner", "FastighetsKompassen.Kommuner\FastighetsKompassen.Kommuner.csproj", "{76CD7D36-D7B7-4874-A44F-3DA49F783C8F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastighetsKompassen.Kommuner", "FastighetsKompassen.Kommuner\FastighetsKompassen.Kommuner.csproj", "{76CD7D36-D7B7-4874-A44F-3DA49F783C8F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.Infrastructure", "FastighetsKompassen.Infrastructure\FastighetsKompassen.Infrastructure.csproj", "{DD87A500-A9DD-4083-A677-264921E7A339}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastighetsKompassen.Infrastructure", "FastighetsKompassen.Infrastructure\FastighetsKompassen.Infrastructure.csproj", "{DD87A500-A9DD-4083-A677-264921E7A339}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.Shared", "FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj", "{81E90647-67ED-43DB-9A3E-41E344DD018C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastighetsKompassen.Shared", "FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj", "{81E90647-67ED-43DB-9A3E-41E344DD018C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.Backup", "FastighetsKompassen.Backup\FastighetsKompassen.Backup.csproj", "{CD7085BB-F157-410C-9F10-76C228467BB5}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{7CDFF41F-3EFB-4A89-A53E-65BC50F99F16}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{C5B3CC2A-549A-479F-9248-0AAF4FC953AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.Police", "FastighetsKompassen.Police\FastighetsKompassen.Police.csproj", "{E0B51CDB-A5A8-42D1-853A-979768BBFCB5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.RealEstate", "FastighetsKompassen.RealEstate\FastighetsKompassen.RealEstate.csproj", "{F617E453-1613-46BC-81D7-F1C0CB236608}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastighetsKompassen.SchoolData", "FastighetsKompassen.SchoolData\FastighetsKompassen.SchoolData.csproj", "{F9D98026-C103-43E3-BABB-11684318AFBA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +49,18 @@ Global
 		{81E90647-67ED-43DB-9A3E-41E344DD018C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81E90647-67ED-43DB-9A3E-41E344DD018C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{81E90647-67ED-43DB-9A3E-41E344DD018C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CD7085BB-F157-410C-9F10-76C228467BB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CD7085BB-F157-410C-9F10-76C228467BB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CD7085BB-F157-410C-9F10-76C228467BB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CD7085BB-F157-410C-9F10-76C228467BB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0B51CDB-A5A8-42D1-853A-979768BBFCB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0B51CDB-A5A8-42D1-853A-979768BBFCB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0B51CDB-A5A8-42D1-853A-979768BBFCB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0B51CDB-A5A8-42D1-853A-979768BBFCB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F617E453-1613-46BC-81D7-F1C0CB236608}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F617E453-1613-46BC-81D7-F1C0CB236608}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F617E453-1613-46BC-81D7-F1C0CB236608}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F617E453-1613-46BC-81D7-F1C0CB236608}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9D98026-C103-43E3-BABB-11684318AFBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9D98026-C103-43E3-BABB-11684318AFBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9D98026-C103-43E3-BABB-11684318AFBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9D98026-C103-43E3-BABB-11684318AFBA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -52,8 +68,13 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{C26BB103-4227-4DB1-BBEE-F380C678BF4A} = {1369CEAF-9DA1-4012-8AE8-600EA84E5906}
 		{76CD7D36-D7B7-4874-A44F-3DA49F783C8F} = {737EB165-B9C4-43E8-9525-134920A6948D}
-		{DD87A500-A9DD-4083-A677-264921E7A339} = {737EB165-B9C4-43E8-9525-134920A6948D}
-		{81E90647-67ED-43DB-9A3E-41E344DD018C} = {737EB165-B9C4-43E8-9525-134920A6948D}
-		{CD7085BB-F157-410C-9F10-76C228467BB5} = {737EB165-B9C4-43E8-9525-134920A6948D}
+		{DD87A500-A9DD-4083-A677-264921E7A339} = {7CDFF41F-3EFB-4A89-A53E-65BC50F99F16}
+		{81E90647-67ED-43DB-9A3E-41E344DD018C} = {C5B3CC2A-549A-479F-9248-0AAF4FC953AA}
+		{E0B51CDB-A5A8-42D1-853A-979768BBFCB5} = {737EB165-B9C4-43E8-9525-134920A6948D}
+		{F617E453-1613-46BC-81D7-F1C0CB236608} = {737EB165-B9C4-43E8-9525-134920A6948D}
+		{F9D98026-C103-43E3-BABB-11684318AFBA} = {737EB165-B9C4-43E8-9525-134920A6948D}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5F99C392-43A0-45AF-9D02-A7E3CE6260E2}
 	EndGlobalSection
 EndGlobal

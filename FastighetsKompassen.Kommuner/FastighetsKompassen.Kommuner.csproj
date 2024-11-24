@@ -11,4 +11,9 @@
     <ProjectReference Include="..\FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\" />
+    <Folder Include="Logic\" />
+  </ItemGroup>
+
 </Project>

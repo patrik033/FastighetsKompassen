@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FastighetsKompassen.Backup\FastighetsKompassen.Backup.csproj" />
     <ProjectReference Include="..\FastighetsKompassen.Infrastructure\FastighetsKompassen.Infrastructure.csproj" />
     <ProjectReference Include="..\FastighetsKompassen.Kommuner\FastighetsKompassen.Kommuner.csproj" />
     <ProjectReference Include="..\FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj" />

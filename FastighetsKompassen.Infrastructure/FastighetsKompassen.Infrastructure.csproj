@@ -7,8 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Backup\" />
-    <Folder Include="Configuration\" />
+    <Compile Remove="Backup\**" />
+    <Compile Remove="Configuration\**" />
+    <EmbeddedResource Remove="Backup\**" />
+    <EmbeddedResource Remove="Configuration\**" />
+    <None Remove="Backup\**" />
+    <None Remove="Configuration\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,6 +21,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Repositories\" />
   </ItemGroup>
 
 </Project>

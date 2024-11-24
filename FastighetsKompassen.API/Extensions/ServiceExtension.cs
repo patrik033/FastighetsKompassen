@@ -1,6 +1,6 @@
 ﻿namespace FastighetsKompassen.API.Extensions
 {
-    public class EndpointMappingExtension
+    public class ServiceExtension
     {
     }
 }

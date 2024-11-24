@@ -6,8 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\FastighetsKompassen.Infrastructure\FastighetsKompassen.Infrastructure.csproj" />
-  </ItemGroup>
-
 </Project>

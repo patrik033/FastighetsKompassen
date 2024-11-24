@@ -1,6 +1,21 @@
-﻿namespace FastighetsKompassen.API.Endpoints
+﻿using FastighetsKompassen.API.Services;
+using Microsoft.AspNetCore.Mvc;
+
+namespace FastighetsKompassen.API.Endpoints
 {
-    public class BackupEndpoint
+    public static class BackupEndpoint
     {
+        public static void MapBackupEndpoints(this IEndpointRouteBuilder app)
+        {
+            app.MapPost("/api/backup", async ([FromServices] BackupService backupService) =>
+            {
+                var backupPath = await backupService.CreateBackupAsync();
+                return Results.Ok(new {message = "Backup Created Successfully",backupPath});
+            })
+            .WithName("CreateDatabaseBackup")
+            .WithTags("Database")
+            .Produces(200)
+            .Produces(400);
+        }
     }
 }
