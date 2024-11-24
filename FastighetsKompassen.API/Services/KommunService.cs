@@ -16,7 +16,9 @@ public class KommunService
 
     public async Task<bool> AddKommunFromJsonAsync(Stream jsonStream)
     {
-        var kommunData = await JsonSerializer.DeserializeAsync<KommunData>(jsonStream, new JsonSerializerOptions
+        using var bufferedStream = new BufferedStream(jsonStream, 8192);
+
+        var kommunData = await JsonSerializer.DeserializeAsync<KommunData>(bufferedStream, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
@@ -27,7 +29,7 @@ public class KommunService
         }
 
         var exists = await _dbContext.Kommuner.AnyAsync(k =>
-                k.Kommun == kommunData.Kommun && k.Kommunnamn == kommunData.Kommunnamn);
+            k.Kommun == kommunData.Kommun && k.Kommunnamn == kommunData.Kommunnamn);
 
         if (exists)
         {
@@ -35,6 +37,28 @@ public class KommunService
         }
 
         _dbContext.Kommuner.Add(kommunData);
+        await _dbContext.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> DeleteKommunByIdAsync(int kommunId)
+    {
+        var kommun = await _dbContext.Kommuner
+            .Include(k => k.PoliceEvents)
+            .Include(k => k.RealEstateDataList)
+            .Include(k => k.SchoolResultsForGrade6)
+            .Include(k => k.SchoolResultsForGrade9)
+            .Include(k => k.LifeExpectancy)
+            .Include(k => k.EducationData)
+            .FirstOrDefaultAsync(k => k.Id == kommunId);
+
+        if (kommun == null)
+        {
+            return false;
+        }
+
+        _dbContext.Kommuner.Remove(kommun);
         await _dbContext.SaveChangesAsync();
 
         return true;

@@ -30,31 +30,55 @@ namespace FastighetsKompassen.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<KommunData>()
-            .HasOne(k => k.LifeExpectancy) // KommunData har en LifeExpectancy
-            .WithOne(l => l.Kommun) // LifeExpectancyData har en Kommun
-            .HasForeignKey<LifeExpectancyData>(l => l.KommunDataId) // Främmande nyckel i LifeExpectancyData
-            .OnDelete(DeleteBehavior.Cascade); // Cascaderande borttagning
+                .HasOne(k => k.LifeExpectancy) // KommunData har en LifeExpectancy
+                .WithOne(l => l.Kommun) // LifeExpectancyData har en Kommun
+                .HasForeignKey<LifeExpectancyData>(l => l.KommunDataId) // Främmande nyckel i LifeExpectancyData
+                .OnDelete(DeleteBehavior.Cascade); // Cascaderande borttagning
 
             modelBuilder.Entity<KommunData>()
-            .HasOne(k => k.Income)
-            .WithOne(i => i.Kommun)
-            .HasForeignKey<ScbValues>(i => i.KommunDataId)
-            .OnDelete(DeleteBehavior.Restrict); // Undvik kaskad för att förebygga cykler
+                .HasOne(k => k.Income)
+                .WithOne(i => i.Kommun)
+                .HasForeignKey<ScbValues>(i => i.KommunDataId)
+                .OnDelete(DeleteBehavior.Cascade); // Undvik kaskad för att förebygga cykler  //kankse restrict?
+
+            modelBuilder.Entity<KommunData>()
+                .HasOne(k => k.EducationData)
+                .WithOne()
+                .HasForeignKey<EducationLevelData>(e => e.KommunDataId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<KommunData>()
+                .HasMany(k => k.PoliceEvents)
+                .WithOne(p => p.Kommun)
+                .HasForeignKey(p => p.KommunDataId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<KommunData>()
+                .HasMany(k => k.RealEstateDataList)
+                .WithOne(r => r.Kommun)
+                .HasForeignKey(r => r.KommunDataId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<KommunData>()
+                .HasMany(k => k.SchoolResultsForGrade6)
+                .WithOne(s => s.Kommun)
+                .HasForeignKey(s => s.KommunId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<KommunData>()
+                .HasMany(k => k.SchoolResultsForGrade9)
+                .WithOne(s => s.Kommun)
+                .HasForeignKey(s => s.KommunId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
-            //    // Konfiguration för SchoolResultsForGrade6
-            //modelBuilder.Entity<SchoolResultGradeSix>()
-            //    .HasOne<KommunData>() // Ingen navigation tillbaka från SchoolResult till KommunData
-            //    .WithMany(k => k.SchoolResultsForGrade6)
-            //    .HasForeignKey("KommunDataId") // Främmande nyckel
-            //    .OnDelete(DeleteBehavior.Cascade); // Cascaderande borttagning
 
-            ////    // Konfiguration för SchoolResultsForGrade9
-            //modelBuilder.Entity<SchoolResultGradeSix>()
-            //    .HasOne<KommunData>()
-            //    .WithMany(k => k.SchoolResultsForGrade9)
-            //    .HasForeignKey("KommunDataId")
-            //    .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<RealEstateData>()
+                .HasOne(r => r.Kommun)
+                .WithMany(k => k.RealEstateDataList)
+                .HasForeignKey(r => r.KommunDataId)
+                .OnDelete(DeleteBehavior.Cascade);
+
 
             modelBuilder.Entity<ScbValues>(entity =>
             {

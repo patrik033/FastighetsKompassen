@@ -5,18 +5,14 @@ namespace FastighetsKompassen.API.Services
 {
     public class BackupService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly AppDbContext _dbContext;
         private readonly string _backupPath;
 
-        public BackupService(AppDbContext appDbContext)
+        public BackupService(AppDbContext dbContext,IConfiguration configuration)
         {
-            _appDbContext = appDbContext;
-            _backupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Backups");
-
-            if (!Directory.Exists(_backupPath))
-            {
-                Directory.CreateDirectory(_backupPath);
-            }
+            _dbContext = dbContext;
+            _backupPath = configuration["BackupDirectory"] ?? "Backups";
+            Directory.CreateDirectory(_backupPath);
         }
 
         public async Task<string> CreateBackupAsync()
@@ -25,10 +21,10 @@ namespace FastighetsKompassen.API.Services
             var backupFileName = $"Backup_{timestamp}.bak";
             var backupFilePath = Path.Combine(_backupPath, backupFileName);
 
-            var databaseName = _appDbContext.Database.GetDbConnection().Database;
+            var databaseName = _dbContext.Database.GetDbConnection().Database;
             var sqlCommand = $"BACKUP DATABASE [{databaseName}] TO DISK = '{backupFilePath}'";
 
-            using var connection = _appDbContext.Database.GetDbConnection();
+            using var connection = _dbContext.Database.GetDbConnection();
             await connection.OpenAsync();
 
             using var command = connection.CreateCommand();

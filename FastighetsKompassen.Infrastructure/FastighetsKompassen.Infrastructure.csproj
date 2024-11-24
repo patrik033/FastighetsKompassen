@@ -9,10 +9,13 @@
   <ItemGroup>
     <Compile Remove="Backup\**" />
     <Compile Remove="Configuration\**" />
+    <Compile Remove="Repositories\**" />
     <EmbeddedResource Remove="Backup\**" />
     <EmbeddedResource Remove="Configuration\**" />
+    <EmbeddedResource Remove="Repositories\**" />
     <None Remove="Backup\**" />
     <None Remove="Configuration\**" />
+    <None Remove="Repositories\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,10 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Repositories\" />
   </ItemGroup>
 
 </Project>

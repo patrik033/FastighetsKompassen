@@ -13,7 +13,7 @@ namespace FastighetsKompassen.API.Endpoints
             app.MapPost("/api/kommuner/upload", async (IFormFile jsonFile, KommunService kommunService) =>
             {
                 if (jsonFile == null || jsonFile.Length == 0)
-                    return Results.BadRequest(new {message = "Ingen fil bifogades." });
+                    return Results.BadRequest(new { message = "Ingen fil bifogades." });
 
                 try
                 {
@@ -29,7 +29,7 @@ namespace FastighetsKompassen.API.Endpoints
                     return Results.Problem($"Ett fel inträffade: {ex.Message}");
                 }
             })
-                
+
                .WithName("UploadKommunJson")
                .DisableAntiforgery()
                .WithTags("Kommun")
@@ -39,7 +39,53 @@ namespace FastighetsKompassen.API.Endpoints
                .Produces(409)
                .Produces(500);
 
-           
+            //upload multiple files
+            app.MapPost("/api/kommuner/upload-multiple", async (IFormFileCollection files, KommunService kommunService) =>
+            {
+                if (files == null || !files.Any())
+                {
+                    return Results.BadRequest(new { message = "Inga filer bifogades." });
+                }
+
+                List<string> successFiles = new();
+                List<string> failedFiles = new();
+
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        using var stream = file.OpenReadStream();
+                        var success = await kommunService.AddKommunFromJsonAsync(stream);
+
+                        if (success)
+                        {
+                            successFiles.Add(file.FileName);
+                        }
+                        else
+                        {
+                            failedFiles.Add(file.FileName);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failedFiles.Add($"{file.FileName} - Fel: {ex.Message}");
+                    }
+                }
+
+                return Results.Ok(new
+                {
+                    message = "Batch-upload klar.",
+                    succeeded = successFiles,
+                    failed = failedFiles
+                });
+            })
+    .WithName("UploadMultipleKommunJson")
+    .DisableAntiforgery()
+    .WithTags("Kommun")
+    .Accepts<IFormFileCollection>("multipart/form-data")
+    .Produces(200)
+    .Produces(400)
+    .Produces(500);
         }
     }
 }

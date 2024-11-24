@@ -51,7 +51,8 @@ namespace FastighetsKompassen.API.Migrations
                     PostGymnasialUnder3Years = table.Column<int>(type: "int", nullable: false),
                     PostGymnasial3YearsOrMore = table.Column<int>(type: "int", nullable: false),
                     MissingInfo = table.Column<int>(type: "int", nullable: false),
-                    KommunDataId = table.Column<int>(type: "int", nullable: false)
+                    KommunDataId = table.Column<int>(type: "int", nullable: false),
+                    KommunId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -62,6 +63,11 @@ namespace FastighetsKompassen.API.Migrations
                         principalTable: "Kommuner",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_EducationLevelData_Kommuner_KommunId",
+                        column: x => x.KommunId,
+                        principalTable: "Kommuner",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -310,7 +316,7 @@ namespace FastighetsKompassen.API.Migrations
                         column: x => x.KommunDataId,
                         principalTable: "Kommuner",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -340,6 +346,11 @@ namespace FastighetsKompassen.API.Migrations
                 table: "EducationLevelData",
                 column: "KommunDataId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EducationLevelData_KommunId",
+                table: "EducationLevelData",
+                column: "KommunId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LifeExpectancyData_KommunDataId",

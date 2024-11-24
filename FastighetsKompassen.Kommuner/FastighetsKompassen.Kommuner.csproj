@@ -7,13 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Logic\**" />
+    <EmbeddedResource Remove="Logic\**" />
+    <None Remove="Logic\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FastighetsKompassen.Infrastructure\FastighetsKompassen.Infrastructure.csproj" />
     <ProjectReference Include="..\FastighetsKompassen.Shared\FastighetsKompassen.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Models\" />
-    <Folder Include="Logic\" />
   </ItemGroup>
 
 </Project>

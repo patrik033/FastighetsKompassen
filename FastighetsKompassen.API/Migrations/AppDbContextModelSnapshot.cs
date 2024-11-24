@@ -361,6 +361,9 @@ namespace FastighetsKompassen.API.Migrations
                     b.Property<int>("KommunDataId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("KommunId")
+                        .HasColumnType("int");
+
                     b.Property<int>("MissingInfo")
                         .HasColumnType("int");
 
@@ -377,6 +380,8 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasIndex("KommunDataId")
                         .IsUnique();
+
+                    b.HasIndex("KommunId");
 
                     b.ToTable("EducationLevelData");
                 });
@@ -642,7 +647,7 @@ namespace FastighetsKompassen.API.Migrations
                     b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
                         .WithOne("Income")
                         .HasForeignKey("FastighetsKompassen.Shared.Models.ScbValues", "KommunDataId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("EducationData");
@@ -652,11 +657,15 @@ namespace FastighetsKompassen.API.Migrations
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.SkolData.EducationLevelData", b =>
                 {
-                    b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
+                    b.HasOne("FastighetsKompassen.Shared.Models.KommunData", null)
                         .WithOne("EducationData")
                         .HasForeignKey("FastighetsKompassen.Shared.Models.SkolData.EducationLevelData", "KommunDataId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
+                        .WithMany()
+                        .HasForeignKey("KommunId");
 
                     b.Navigation("Kommun");
                 });
