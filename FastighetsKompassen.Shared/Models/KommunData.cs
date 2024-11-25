@@ -28,7 +28,7 @@ namespace FastighetsKompassen.Shared.Models
         public List<SchoolResultGradeSix> SchoolResultsForGrade6 { get; set; } = new List<SchoolResultGradeSix>();  // Lista med skolor
         public List<SchoolResultGradeNine> SchoolResultsForGrade9 { get; set; } = new List<SchoolResultGradeNine>();  // Lista med skolor
         //public List<SchoolResultGymnasium> SchoolResultsForGymnasium { get; set; } = new List<SchoolResultGymnasium>();  // Lista med skolor
-        public List<EducationLevelData>? EducationData { get; set; } = new List<EducationLevelData>();
+        public List<EducationLevelData>? EducationLevels { get; set; } = new List<EducationLevelData>();
 
         
 
