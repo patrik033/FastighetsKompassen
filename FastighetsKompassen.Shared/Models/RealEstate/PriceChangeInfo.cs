@@ -12,5 +12,8 @@ namespace FastighetsKompassen.Shared.Models.RealEstate
         public bool Plus { get; set; }
         public bool Minus { get; set; }
         public int Value { get; set; }
+
+        public int RealEstateDataId { get; set; }
+        public RealEstateData RealEstateData { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Shared.Models;
+using FastighetsKompassen.Shared.Models.ErrorHandling;
 using Microsoft.EntityFrameworkCore;
 
 namespace FastighetsKompassen.Infrastructure.Services;
@@ -42,25 +43,25 @@ public class KommunService
         return true;
     }
 
-    public async Task<bool> DeleteKommunByIdAsync(int kommunId)
+    public async Task<Result> DeleteKommunAsync(int kommunId)
     {
         var kommun = await _dbContext.Kommuner
-            .Include(k => k.PoliceEvents)
-            .Include(k => k.RealEstateDataList)
-            .Include(k => k.SchoolResultsForGrade6)
-            .Include(k => k.SchoolResultsForGrade9)
-            .Include(k => k.LifeExpectancy)
-            .Include(k => k.EducationData)
-            .FirstOrDefaultAsync(k => k.Id == kommunId);
+            .FirstOrDefaultAsync(x => x.Id == kommunId);
+      
+            //.Include(k => k.RealEstateDataList
+            //.Include(k => k.SchoolResultsForGrade6)
+            //.Include(k => k.SchoolResultsForGrade9)
+            ////.Include(k => k.SchoolResultsForGymnasium)
+            //.FirstOrDefaultAsync(k => k.Id == kommunId);
 
         if (kommun == null)
         {
-            return false;
+            return Result.Failure("Kommunen finns inte.");
         }
 
         _dbContext.Kommuner.Remove(kommun);
         await _dbContext.SaveChangesAsync();
 
-        return true;
+        return Result.Success();
     }
 }

@@ -71,13 +71,23 @@ namespace FastighetsKompassen.Infrastructure.Data
                 .HasForeignKey(s => s.KommunId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
+            modelBuilder.Entity<PoliceEvent>()
+                .HasOne(pe => pe.Location) // PoliceEvent har en Location
+                .WithOne(l => l.PoliceEvent) // Location pekar tillbaka till PoliceEvent
+                .HasForeignKey<Location>(l => l.PoliceEventId) // Utländsk nyckel i Location
+                .OnDelete(DeleteBehavior.Cascade); // Cascaderande borttagning
 
             modelBuilder.Entity<RealEstateData>()
                 .HasOne(r => r.Kommun)
                 .WithMany(k => k.RealEstateDataList)
                 .HasForeignKey(r => r.KommunDataId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PoliceEventSummary>()
+    .HasOne(pes => pes.Kommun) // PoliceEventSummary tillhör en Kommun
+    .WithMany(k => k.PoliceEventSummary) // Kommun har många PoliceEventSummary
+    .HasForeignKey(pes => pes.KommunId) // Utländsk nyckel i PoliceEventSummary
+    .OnDelete(DeleteBehavior.Cascade); // Cascaderande borttagning
 
 
             modelBuilder.Entity<ScbValues>(entity =>

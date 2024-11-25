@@ -4,6 +4,7 @@ using FastighetsKompassen.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FastighetsKompassen.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241124230951_updatedid")]
+    partial class updatedid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -172,16 +175,10 @@ namespace FastighetsKompassen.API.Migrations
                     b.Property<bool>("Plus")
                         .HasColumnType("bit");
 
-                    b.Property<int>("RealEstateDataId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Value")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("RealEstateDataId")
-                        .IsUnique();
 
                     b.ToTable("PriceChangeInfo");
                 });
@@ -242,6 +239,9 @@ namespace FastighetsKompassen.API.Migrations
                     b.Property<decimal?>("Price")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("PriceChangeInfoId")
+                        .HasColumnType("int");
+
                     b.Property<string>("PropertyType")
                         .HasColumnType("nvarchar(max)");
 
@@ -267,6 +267,8 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasIndex("KommunDataId");
 
+                    b.HasIndex("PriceChangeInfoId");
+
                     b.ToTable("RealEstateData");
                 });
 
@@ -278,7 +280,7 @@ namespace FastighetsKompassen.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("KommunId")
+                    b.Property<int?>("KommunDataId")
                         .HasColumnType("int");
 
                     b.Property<string>("PropertyType")
@@ -295,7 +297,7 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("KommunId");
+                    b.HasIndex("KommunDataId");
 
                     b.ToTable("RealEstateYearlySummary");
                 });
@@ -610,17 +612,6 @@ namespace FastighetsKompassen.API.Migrations
                     b.Navigation("Kommun");
                 });
 
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.RealEstate.PriceChangeInfo", b =>
-                {
-                    b.HasOne("FastighetsKompassen.Shared.Models.RealEstate.RealEstateData", "RealEstateData")
-                        .WithOne("PriceChangeInfo")
-                        .HasForeignKey("FastighetsKompassen.Shared.Models.RealEstate.PriceChangeInfo", "RealEstateDataId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RealEstateData");
-                });
-
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.RealEstate.RealEstateData", b =>
                 {
                     b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
@@ -629,18 +620,20 @@ namespace FastighetsKompassen.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FastighetsKompassen.Shared.Models.RealEstate.PriceChangeInfo", "PriceChangeInfo")
+                        .WithMany()
+                        .HasForeignKey("PriceChangeInfoId");
+
                     b.Navigation("Kommun");
+
+                    b.Navigation("PriceChangeInfo");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.RealEstate.RealEstateYearlySummary", b =>
                 {
-                    b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
+                    b.HasOne("FastighetsKompassen.Shared.Models.KommunData", null)
                         .WithMany("RealEstateYearlySummary")
-                        .HasForeignKey("KommunId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Kommun");
+                        .HasForeignKey("KommunDataId");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.ScbValues", b =>
@@ -721,11 +714,6 @@ namespace FastighetsKompassen.API.Migrations
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.PoliceData.PoliceEvent", b =>
                 {
                     b.Navigation("Location");
-                });
-
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.RealEstate.RealEstateData", b =>
-                {
-                    b.Navigation("PriceChangeInfo");
                 });
 #pragma warning restore 612, 618
         }

@@ -13,5 +13,8 @@ namespace FastighetsKompassen.Shared.Models.RealEstate
         public string? PropertyType { get; set; }
         public int SalesCount { get; set; }
         public decimal? TotalSalesAmount { get; set; }
+
+        public int KommunId { get; set; }
+        public KommunData Kommun { get; set; }
     }
 }
