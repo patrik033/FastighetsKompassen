@@ -12,6 +12,7 @@ namespace FastighetsKompassen.Shared.Models.SkolData
         public string Subject { get; set; }  // Nytt fält för att markera vilket ämne datan tillhör
         public string EducationLevel { get; set; } // Nytt fält för utbildningsnivå (Årskurs 6, 9 eller Gymnasium)
                                                    //skola
+        public int StartYear { get; set; }
         public string SchoolName { get; set; }
         //skol-enhetskod
         public int SchoolUnitCode { get; set; }

@@ -15,7 +15,6 @@ namespace FastighetsKompassen.Shared.Models
         public string Sex { get; set; }
         public string Year { get; set; }
         public decimal MiddleValue { get; set; }
-        public EducationLevelData? EducationData { get; set; }
 
         public int KommunDataId { get; set; }
         public KommunData? Kommun { get; set; }

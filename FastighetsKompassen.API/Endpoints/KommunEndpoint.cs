@@ -105,7 +105,8 @@ namespace FastighetsKompassen.API.Endpoints
                     return Results.BadRequest(new { message = "Ogiltig bokstav. Ange en bokstav mellan A-Ö." });
 
                 // Hitta mappen baserat på bokstaven
-                var folderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, letter.ToUpper());
+                //var folderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uploads", letter.ToUpper());
+                var folderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"uploads");
                 if (!Directory.Exists(folderPath))
                     return Results.NotFound(new { message = $"Mappen för bokstav '{letter}' kunde inte hittas." });
 
@@ -121,21 +122,11 @@ namespace FastighetsKompassen.API.Endpoints
                     {
                         await using var stream = File.OpenRead(file);
                         var success = await kommunService.AddKommunFromJsonAsync(stream);
-
-                        results.Add(new
-                        {
-                            file = Path.GetFileName(file),
-                            status = success ? "Lyckad" : "Redan existerande"
-                        });
+                        results.Add(new { file = Path.GetFileName(file), status = success ? "Lyckad" : "Redan existerande" });
                     }
                     catch (Exception ex)
                     {
-                        results.Add(new
-                        {
-                            file = Path.GetFileName(file),
-                            status = "Misslyckad",
-                            error = ex.Message
-                        });
+                        results.Add(new {file = Path.GetFileName(file), status = "Misslyckad", error = ex.Message});
                     }
                 }
 

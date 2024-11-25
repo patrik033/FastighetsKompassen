@@ -14,7 +14,6 @@ namespace FastighetsKompassen.Shared.Models.PoliceData
         public int? EventCount { get; set; }
 
         public int KommunId { get; set; }
-
         // Navigation property
         public KommunData ?Kommun { get; set; }
     }

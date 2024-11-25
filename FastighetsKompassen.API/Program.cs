@@ -1,11 +1,17 @@
 using FastighetsKompassen.API.Endpoints;
 using FastighetsKompassen.API.Extensions;
+using FastighetsKompassen.API.ReadToFile;
 using FastighetsKompassen.API.Services;
 using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Infrastructure.Services;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
+
+
+
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,11 +36,16 @@ builder.Services.Configure<FormOptions>(options =>
 
 
 //builder.Services.AddScoped<BackupService>();
+builder.Services.AddSingleton<ReadExcelDataToClass>();
+
+
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<KommunService>();
 builder.Services.AddScoped<PoliceService>();
 builder.Services.AddScoped<RealEstateService>();
-//builder.Services.AddScoped<SchoolService>();
+builder.Services.AddScoped<SchoolService>();
+
+
 
 
 
@@ -55,7 +66,7 @@ app.MapKommunEndpoints();
 app.MapBackupEndpoints();
 app.MapPoliceEndpoints();
 app.MapRealEstateEndpoints();
-//app.MapSchoolEndpoints();
+app.MapSchoolEndpoints();
 
 
 // Configure the HTTP request pipeline.
