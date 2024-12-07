@@ -6,14 +6,12 @@ using System.Threading.Tasks;
 
 namespace FastighetsKompassen.Shared.Models
 {
-    public class AverageAgeExpectancy
+    public class AverageLifeTime
     {
         public int Id { get; set; }
-        public decimal Male { get; set; }  // Medellivslängd för män
-        public decimal Female { get; set; } // Medellivslängd för kvinnor
-        public decimal Total { get; set; }  // Medellivslängd totalt
-        public int Year { get; set; }
-
+        public decimal MaleValue { get; set; }  // Medellivslängd för män
+        public decimal FemaleValue { get; set; } // Medellivslängd för kvinnor
+        public string YearSpan { get; set; }
         public int KommunDataId { get; set; }
         public KommunData? Kommun { get; set; }
     }

@@ -20,9 +20,9 @@ namespace FastighetsKompassen.Shared.Models
         public string? Kommunnamn { get; set; }
 
         //livslängs, inkomst och skolresultat
-        public List<AverageAgeExpectancy>? AverageAge { get; set; } = new List<AverageAgeExpectancy>();
-        public List<ScbValues>? Income { get; set; } = new List<ScbValues>();
-        public LifeTimeExpectedData? LifeTime { get; set; }
+        public List<AverageMiddleAge>? AverageMiddleAge { get; set; } = new List<AverageMiddleAge>();
+        public AverageLifeTime? AverageLifeTime { get; set; }
+        public List<Income>? Income { get; set; } = new List<Income>();
 
 
         public List<SchoolResultGradeSix> SchoolResultsForGrade6 { get; set; } = new List<SchoolResultGradeSix>();  // Lista med skolor

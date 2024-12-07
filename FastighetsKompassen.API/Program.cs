@@ -44,7 +44,8 @@ builder.Services.AddScoped<KommunService>();
 builder.Services.AddScoped<PoliceService>();
 builder.Services.AddScoped<RealEstateService>();
 builder.Services.AddScoped<SchoolService>();
-
+builder.Services.AddScoped<ChartService>();
+builder.Services.AddScoped<KPIService>();
 
 
 
@@ -67,6 +68,8 @@ app.MapBackupEndpoints();
 app.MapPoliceEndpoints();
 app.MapRealEstateEndpoints();
 app.MapSchoolEndpoints();
+app.MapChartsEndpoints();
+app.MapKPIEndpoints();
 
 
 // Configure the HTTP request pipeline.

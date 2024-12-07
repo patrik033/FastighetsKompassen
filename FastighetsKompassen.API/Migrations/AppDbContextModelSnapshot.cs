@@ -22,7 +22,36 @@ namespace FastighetsKompassen.API.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.AverageAgeExpectancy", b =>
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.AverageLifeTime", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("FemaleValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("KommunDataId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MaleValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("YearSpan")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KommunDataId")
+                        .IsUnique();
+
+                    b.ToTable("AverageLifeTime");
+                });
+
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.AverageMiddleAge", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +78,40 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasIndex("KommunDataId");
 
-                    b.ToTable("AverageAgeExpectancy");
+                    b.ToTable("AverageMiddleAge");
+                });
+
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.Income", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("IncomeComponent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("KommunDataId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MiddleValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Sex")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KommunDataId");
+
+                    b.ToTable("Income");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.KommunData", b =>
@@ -69,35 +131,6 @@ namespace FastighetsKompassen.API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Kommuner");
-                });
-
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.LifeTimeExpectedData", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("FemaleValue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("KommunDataId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("MaleValue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("YearSpan")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("KommunDataId")
-                        .IsUnique();
-
-                    b.ToTable("LifeTimeExpectedData");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.PoliceData.Location", b =>
@@ -331,40 +364,6 @@ namespace FastighetsKompassen.API.Migrations
                     b.ToTable("RealEstateYearlySummary");
                 });
 
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.ScbValues", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("IncomeComponent")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("KommunDataId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("MiddleValue")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Sex")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Year")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("KommunDataId");
-
-                    b.ToTable("ScbValues");
-                });
-
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.SkolData.EducationLevelData", b =>
                 {
                     b.Property<int>("Id")
@@ -398,7 +397,7 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasIndex("KommunDataId");
 
-                    b.ToTable("EducationLevelData");
+                    b.ToTable("EducationLevels");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.SkolData.SchoolResultGradeNine", b =>
@@ -595,10 +594,21 @@ namespace FastighetsKompassen.API.Migrations
                     b.ToTable("SchoolResultsGradeSix");
                 });
 
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.AverageAgeExpectancy", b =>
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.AverageLifeTime", b =>
                 {
                     b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
-                        .WithMany("AverageAge")
+                        .WithOne("AverageLifeTime")
+                        .HasForeignKey("FastighetsKompassen.Shared.Models.AverageLifeTime", "KommunDataId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Kommun");
+                });
+
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.AverageMiddleAge", b =>
+                {
+                    b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
+                        .WithMany("AverageMiddleAge")
                         .HasForeignKey("KommunDataId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -606,11 +616,11 @@ namespace FastighetsKompassen.API.Migrations
                     b.Navigation("Kommun");
                 });
 
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.LifeTimeExpectedData", b =>
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.Income", b =>
                 {
                     b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
-                        .WithOne("LifeTime")
-                        .HasForeignKey("FastighetsKompassen.Shared.Models.LifeTimeExpectedData", "KommunDataId")
+                        .WithMany("Income")
+                        .HasForeignKey("KommunDataId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -681,17 +691,6 @@ namespace FastighetsKompassen.API.Migrations
                     b.Navigation("Kommun");
                 });
 
-            modelBuilder.Entity("FastighetsKompassen.Shared.Models.ScbValues", b =>
-                {
-                    b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
-                        .WithMany("Income")
-                        .HasForeignKey("KommunDataId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Kommun");
-                });
-
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.SkolData.EducationLevelData", b =>
                 {
                     b.HasOne("FastighetsKompassen.Shared.Models.KommunData", "Kommun")
@@ -727,13 +726,13 @@ namespace FastighetsKompassen.API.Migrations
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.KommunData", b =>
                 {
-                    b.Navigation("AverageAge");
+                    b.Navigation("AverageLifeTime");
+
+                    b.Navigation("AverageMiddleAge");
 
                     b.Navigation("EducationLevels");
 
                     b.Navigation("Income");
-
-                    b.Navigation("LifeTime");
 
                     b.Navigation("PoliceEventSummary");
 

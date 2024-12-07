@@ -124,12 +124,6 @@ public class KommunService
     {
         var kommun = await _dbContext.Kommuner
             .FirstOrDefaultAsync(x => x.Id == kommunId);
-      
-            //.Include(k => k.RealEstateDataList
-            //.Include(k => k.SchoolResultsForGrade6)
-            //.Include(k => k.SchoolResultsForGrade9)
-            ////.Include(k => k.SchoolResultsForGymnasium)
-            //.FirstOrDefaultAsync(k => k.Id == kommunId);
 
         if (kommun == null)
         {

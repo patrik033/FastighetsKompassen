@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace FastighetsKompassen.Shared.Models
 {
-    public class ScbValues
+    public class Income
     {
         public int Id { get; set; }
         public string IncomeComponent { get; set; }
         public string Sex { get; set; }
-        public string Year { get; set; }
+        public int Year { get; set; }
         public decimal MiddleValue { get; set; }
 
         public int KommunDataId { get; set; }
