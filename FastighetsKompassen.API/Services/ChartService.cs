@@ -1,5 +1,5 @@
 ﻿using FastighetsKompassen.Infrastructure.Data;
-using FastighetsKompassen.Shared.Models.DTO;
+
 using FastighetsKompassen.Shared.Models.ErrorHandling;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,74 +16,106 @@ namespace FastighetsKompassen.API.Services
         }
 
 
-        public async Task<object> GetRealEstateChartData(string kommunId)
+        public async Task<object> GetChartData(string kommunId)
         {
-            var data = await _context.RealEstateYearlySummary
-                .Where(r => r.Kommun.Kommun == kommunId && r.Year == DateTime.Now.Year)
-                .GroupBy(r => r.PropertyType)
-                .Select(g => new
-                {
-                    PropertyType = g.Key,
-                    SalesCount = g.Sum(r => r.SalesCount)
-                })
-                .ToListAsync();
-
-            return data;
-        }
-
-        public async Task<object> GetCrimeChartData(string kommunId)
-        {
-            var data = await _context.PoliceEventSummary
-                .Where(p => p.Kommun.Kommun == kommunId && p.Year == DateTime.Now.Year)
-                .GroupBy(p => p.EventType)
-                .Select(g => new
-                {
-                    EventType = g.Key,
-                    EventCount = g.Sum(p => p.EventCount)
-                })
-                .ToListAsync();
-
-            return data;
-        }
-
-        public async Task<object> GetIncomeChartData(string kommunId)
-        {
-            var data = await _context.Income
-                .Where(i => i.Kommun.Kommun == kommunId)
-                .OrderBy(i => i.Year)
-                .Select(i => new { i.Year, i.MiddleValue })
-                .ToListAsync();
-
-            return data;
-        }
-
-        public async Task<object> GetLifeExpectancyChartData(string kommunId)
-        {
-            var data = await _context.AverageLifeTime
-                .Where(l => l.Kommun.Kommun == kommunId)
-                .Select(l => new
-                {
-                    Male = l.MaleValue,
-                    Female = l.FemaleValue
-                })
-                .FirstOrDefaultAsync();
-
-            return data;
-        }
-
-        public async Task<object> GetSchoolResultsChartData(string kommunId)
-        {
-            var data = await _context.SchoolResultsGradeNine
+            var latestYear = await _context.SchoolResultsGradeNine
                 .Where(s => s.Kommun.Kommun == kommunId)
-                .GroupBy(s => s.Subject)
+                .MaxAsync(s => s.StartYear);
+
+            var schoolResult = await _context.SchoolResultsGradeNine
+                .AsNoTracking()
+                 .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == latestYear)
+                 .GroupBy(s => s.Subject)
+                 .Select(subGroup => new
+                 {
+                     Subject = subGroup.Key,
+                     AverageGrade = Math.Round((decimal)subGroup.Average(s => s.GradePoints), 1)
+                 })
+                 .ToListAsync();
+
+            var topSchools = await _context.SchoolResultsGradeNine
+                .AsNoTracking()
+                 .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == latestYear)
+                 .GroupBy(s => s.SchoolName)
+                 .Select(schoolGroup => new
+                 {
+                     SchoolName = schoolGroup.Key,
+                     AverageGrade = Math.Round((decimal)schoolGroup.Average(s => s.GradePoints), 1)
+                 })
+                 .OrderByDescending(s => s.AverageGrade)
+                 .Take(3)
+                 .ToListAsync();
+
+            var totalSales = await _context.RealEstateYearlySummary
+                .AsNoTracking()
+                .Where(r => r.Kommun.Kommun == kommunId &&
+                (r.PropertyType == "Villa" ||
+                 r.PropertyType == "Lägenhet" ||
+                 r.PropertyType == "Radhus"))
+                .GroupBy(r => r.Year)
+                .OrderByDescending(g => g.Key)
                 .Select(g => new
                 {
-                    Subject = g.Key,
-                    AvgGradePoints = g.Average(s => s.GradePoints)
-                })
-                .ToListAsync();
+                    PropertySales = g.Select(r => new
+                    {
+                        r.PropertyType,
+                        r.SalesCount,
+                        r.TotalSalesAmount
+                    }),
+                }).FirstOrDefaultAsync();
 
-            return data;
+
+            var totalCrimes = await _context.PoliceEventSummary
+                .AsNoTracking()
+                .Where(p => p.Kommun.Kommun == kommunId)
+                .GroupBy(p => p.Year)
+                .OrderByDescending(g => g.Key)
+                .Select(g => new
+                {
+                    CrimeDistribution = g.Select(e => new
+                    {
+                        e.EventType,
+                        e.EventCount
+                    })
+                    .Take(5)
+                }).FirstOrDefaultAsync();
+
+
+            var lifeExpectancy = await _context.AverageLifeTime
+                .AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Kommun.Kommun == kommunId);
+
+            var avgIncome = await _context.Income
+                .AsNoTracking()
+               //240 == totalt
+               .Where(i => i.Kommun.Kommun == kommunId && i.IncomeComponent == "240")
+               .GroupBy(i => i.Year)
+               .OrderByDescending(g => g.Key)
+               .Select(g => new
+               {
+                   Income = g.Average(e => e.MiddleValue),
+                   Year = g.Key
+               })
+
+               .Take(5)
+               .ToListAsync();
+
+
+            return new
+            {
+                AvgIncome = avgIncome,
+                TotalSales = totalSales,
+                TotalCrimes = totalCrimes,
+                AvgLifeExpectancy = new
+                {
+                    Total = (lifeExpectancy.MaleValue + lifeExpectancy.FemaleValue) / 2,
+                    MaleEverage = lifeExpectancy.MaleValue,
+                    FemaleAverage = lifeExpectancy.FemaleValue,
+                    Yearspan = lifeExpectancy.YearSpan
+                },
+                SchoolResultYearNine = schoolResult,
+                TopSchools = topSchools,
+            };
         }
     }
 }
