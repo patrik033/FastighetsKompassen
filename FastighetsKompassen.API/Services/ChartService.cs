@@ -1,5 +1,5 @@
 ﻿using FastighetsKompassen.Infrastructure.Data;
-
+using FastighetsKompassen.Shared.Models.DTO;
 using FastighetsKompassen.Shared.Models.ErrorHandling;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,106 +16,122 @@ namespace FastighetsKompassen.API.Services
         }
 
 
-        public async Task<object> GetChartData(string kommunId)
+        public async Task<ChartDataDTO> GetChartData(string kommunId)
         {
             var latestYear = await _context.SchoolResultsGradeNine
                 .Where(s => s.Kommun.Kommun == kommunId)
                 .MaxAsync(s => s.StartYear);
 
-            var schoolResult = await _context.SchoolResultsGradeNine
-                .AsNoTracking()
-                 .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == latestYear)
-                 .GroupBy(s => s.Subject)
-                 .Select(subGroup => new
-                 {
-                     Subject = subGroup.Key,
-                     AverageGrade = Math.Round((decimal)subGroup.Average(s => s.GradePoints), 1)
-                 })
-                 .ToListAsync();
+            var result = new ChartDataDTO
+            {
+                PropertySales = await GetPropertySales(kommunId),
+                CrimeDistribution = await GetCrimeDistribution(kommunId, latestYear).Take(5).ToListAsync(),
+                AvgIncome = await GetIncomeData(kommunId).Take(5).ToListAsync(),
+                AvgLifeExpectancy = await GetLifeExpectancy(kommunId).FirstOrDefaultAsync(),
+                SchoolResultYearNine = await GetSchoolResults(kommunId, latestYear).ToListAsync(),
+                TopSchools = await GetTopSchools(kommunId, latestYear).ToListAsync()
+            };
 
-            var topSchools = await _context.SchoolResultsGradeNine
-                .AsNoTracking()
-                 .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == latestYear)
-                 .GroupBy(s => s.SchoolName)
-                 .Select(schoolGroup => new
-                 {
-                     SchoolName = schoolGroup.Key,
-                     AverageGrade = Math.Round((decimal)schoolGroup.Average(s => s.GradePoints), 1)
-                 })
-                 .OrderByDescending(s => s.AverageGrade)
-                 .Take(3)
-                 .ToListAsync();
+            return result;
+        }
 
-            var totalSales = await _context.RealEstateYearlySummary
+    
+       private async Task<List<PropertySalesDTO>> GetPropertySales(string kommunId)
+        {
+            // Hämta det senaste året för vald kommun
+            var latestYear = await _context.RealEstateYearlySummary
+                .AsNoTracking()
+                .Where(r => r.Kommun.Kommun == kommunId)
+                .MaxAsync(r => r.Year);
+
+            // Hämta data för senaste året och aggregera resultaten
+            var propertySales = await _context.RealEstateYearlySummary
                 .AsNoTracking()
                 .Where(r => r.Kommun.Kommun == kommunId &&
-                (r.PropertyType == "Villa" ||
-                 r.PropertyType == "Lägenhet" ||
-                 r.PropertyType == "Radhus"))
-                .GroupBy(r => r.Year)
-                .OrderByDescending(g => g.Key)
-                .Select(g => new
+                            r.Year == latestYear &&
+                            (r.PropertyType == "Villa" || r.PropertyType == "Lägenhet" || r.PropertyType == "Radhus"))
+                .GroupBy(r => r.PropertyType)
+                .Select(ps => new PropertySalesDTO
                 {
-                    PropertySales = g.Select(r => new
-                    {
-                        r.PropertyType,
-                        r.SalesCount,
-                        r.TotalSalesAmount
-                    }),
-                }).FirstOrDefaultAsync();
+                    PropertyType = ps.Key,
+                    SalesCount = ps.Sum(r => r.SalesCount),
+                    TotalSalesAmount = ps.Sum(r => r.TotalSalesAmount)
+                })
+                .ToListAsync();
 
+            return propertySales;
+        }
+        
 
-            var totalCrimes = await _context.PoliceEventSummary
+        private IQueryable<CrimeDistributionDTO> GetCrimeDistribution(string kommunId, int year)
+        {
+            return _context.PoliceEventSummary
                 .AsNoTracking()
-                .Where(p => p.Kommun.Kommun == kommunId)
-                .GroupBy(p => p.Year)
-                .OrderByDescending(g => g.Key)
-                .Select(g => new
+                .Where(p => p.Kommun.Kommun == kommunId && p.Year == year)
+                .GroupBy(p => p.EventType)
+                .OrderByDescending(cd => cd.Sum(e => e.EventCount)) // Sortering direkt efter GroupBy
+                .Select(cd => new CrimeDistributionDTO
                 {
-                    CrimeDistribution = g.Select(e => new
-                    {
-                        e.EventType,
-                        e.EventCount
-                    })
-                    .Take(5)
-                }).FirstOrDefaultAsync();
+                    EventType = cd.Key,
+                    EventCount = cd.Sum(e => e.EventCount)
+                })
+                .Take(5);
+        }
 
-
-            var lifeExpectancy = await _context.AverageLifeTime
+        private IQueryable<IncomeDTO> GetIncomeData(string kommunId)
+        {
+            return _context.Income
                 .AsNoTracking()
-                .FirstOrDefaultAsync(l => l.Kommun.Kommun == kommunId);
-
-            var avgIncome = await _context.Income
-                .AsNoTracking()
-               //240 == totalt
-               .Where(i => i.Kommun.Kommun == kommunId && i.IncomeComponent == "240")
-               .GroupBy(i => i.Year)
-               .OrderByDescending(g => g.Key)
-               .Select(g => new
-               {
-                   Income = g.Average(e => e.MiddleValue),
-                   Year = g.Key
-               })
-
-               .Take(5)
-               .ToListAsync();
-
-
-            return new
-            {
-                AvgIncome = avgIncome,
-                TotalSales = totalSales,
-                TotalCrimes = totalCrimes,
-                AvgLifeExpectancy = new
+                .Where(i => i.Kommun.Kommun == kommunId && i.IncomeComponent == "240")
+                .GroupBy(i => i.Year)
+                .OrderByDescending(i => i.Key)
+                .Select(ai => new IncomeDTO
                 {
-                    Total = (lifeExpectancy.MaleValue + lifeExpectancy.FemaleValue) / 2,
-                    MaleEverage = lifeExpectancy.MaleValue,
-                    FemaleAverage = lifeExpectancy.FemaleValue,
-                    Yearspan = lifeExpectancy.YearSpan
-                },
-                SchoolResultYearNine = schoolResult,
-                TopSchools = topSchools,
-            };
+                    Year = ai.Key,
+                    AvgIncome = ai.Average(i => i.MiddleValue)
+                });
+        }
+
+        private IQueryable<LifeExpectancyDTO> GetLifeExpectancy(string kommunId)
+        {
+            return _context.AverageLifeTime
+                .AsNoTracking()
+                .Where(l => l.Kommun.Kommun == kommunId)
+                .Select(le => new LifeExpectancyDTO
+                {
+                    Total = (le.MaleValue + le.FemaleValue) / 2,
+                    Male = le.MaleValue,
+                    Female = le.FemaleValue,
+                    YearSpan = le.YearSpan
+                });
+        }
+
+        private IQueryable<SchoolResultDTO> GetSchoolResults(string kommunId, int year)
+        {
+            return _context.SchoolResultsGradeNine
+                .AsNoTracking()
+                .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == year)
+                .GroupBy(s => s.Subject)
+                .Select(sr => new SchoolResultDTO
+                {
+                    Subject = sr.Key,
+                    AverageGrade = Math.Round((decimal)sr.Average(s => s.GradePoints), 1)
+                });
+        }
+
+        private IQueryable<TopSchoolDTO> GetTopSchools(string kommunId, int year)
+        {
+            return _context.SchoolResultsGradeNine
+                .AsNoTracking()
+                .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == year)
+                .GroupBy(s => s.SchoolName)
+                .Select(ts => new TopSchoolDTO
+                {
+                    SchoolName = ts.Key,
+                    AverageGrade = Math.Round((decimal)ts.Average(s => s.GradePoints), 1)
+                })
+                .OrderByDescending(s => s.AverageGrade)
+                .Take(3);
         }
     }
 }

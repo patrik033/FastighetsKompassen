@@ -16,7 +16,15 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 var builder = WebApplication.CreateBuilder(args);
 
 
-
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader();
+    });
+});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -46,6 +54,7 @@ builder.Services.AddScoped<RealEstateService>();
 builder.Services.AddScoped<SchoolService>();
 builder.Services.AddScoped<ChartService>();
 builder.Services.AddScoped<KPIService>();
+builder.Services.AddScoped<ComparisonService>();
 
 
 
@@ -62,7 +71,7 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 
-
+app.UseCors();
 app.MapKommunEndpoints();
 app.MapBackupEndpoints();
 app.MapPoliceEndpoints();
@@ -70,6 +79,7 @@ app.MapRealEstateEndpoints();
 app.MapSchoolEndpoints();
 app.MapChartsEndpoints();
 app.MapKPIEndpoints();
+app.MapComparisonEndpoints();
 
 
 // Configure the HTTP request pipeline.
