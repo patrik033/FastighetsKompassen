@@ -55,6 +55,7 @@ builder.Services.AddScoped<SchoolService>();
 builder.Services.AddScoped<ChartService>();
 builder.Services.AddScoped<KPIService>();
 builder.Services.AddScoped<ComparisonService>();
+builder.Services.AddScoped<StatisticsService>();
 
 
 
@@ -80,6 +81,7 @@ app.MapSchoolEndpoints();
 app.MapChartsEndpoints();
 app.MapKPIEndpoints();
 app.MapComparisonEndpoints();
+app.MapStatisticsEndpoints();
 
 
 // Configure the HTTP request pipeline.

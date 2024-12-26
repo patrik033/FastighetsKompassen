@@ -4,6 +4,7 @@ using FastighetsKompassen.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FastighetsKompassen.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241221004811_updatedcords")]
+    partial class updatedcords
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -133,6 +136,30 @@ namespace FastighetsKompassen.API.Migrations
                     b.ToTable("Kommuner");
                 });
 
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.Coordinate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GeometryId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GeometryId");
+
+                    b.ToTable("Coordinate");
+                });
+
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapFeatures", b =>
                 {
                     b.Property<int>("Id")
@@ -167,10 +194,6 @@ namespace FastighetsKompassen.API.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Coordinates")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -745,6 +768,17 @@ namespace FastighetsKompassen.API.Migrations
                     b.Navigation("Kommun");
                 });
 
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.Coordinate", b =>
+                {
+                    b.HasOne("FastighetsKompassen.Shared.Models.MapData.MapGeometry", "Geometry")
+                        .WithMany("Coordinates")
+                        .HasForeignKey("GeometryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Geometry");
+                });
+
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapFeatures", b =>
                 {
                     b.HasOne("FastighetsKompassen.Shared.Models.MapData.MapGeometry", "Geometry")
@@ -893,6 +927,11 @@ namespace FastighetsKompassen.API.Migrations
                     b.Navigation("SchoolResultsForGrade6");
 
                     b.Navigation("SchoolResultsForGrade9");
+                });
+
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapGeometry", b =>
+                {
+                    b.Navigation("Coordinates");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapProperties", b =>

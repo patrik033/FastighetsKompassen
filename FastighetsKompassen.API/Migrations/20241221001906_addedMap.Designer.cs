@@ -4,6 +4,7 @@ using FastighetsKompassen.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FastighetsKompassen.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241221001906_addedMap")]
+    partial class addedMap
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -144,6 +147,9 @@ namespace FastighetsKompassen.API.Migrations
                     b.Property<int>("GeometryId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("MapRootId")
+                        .HasColumnType("int");
+
                     b.Property<int>("PropertiesId")
                         .HasColumnType("int");
 
@@ -155,9 +161,11 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasIndex("GeometryId");
 
+                    b.HasIndex("MapRootId");
+
                     b.HasIndex("PropertiesId");
 
-                    b.ToTable("Features");
+                    b.ToTable("MapFeatures");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapGeometry", b =>
@@ -178,7 +186,7 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Geometries");
+                    b.ToTable("MapGeometry");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapProperties", b =>
@@ -203,7 +211,24 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("Properties");
+                    b.ToTable("MapProperties");
+                });
+
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapRoot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Map");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapTags", b =>
@@ -248,7 +273,7 @@ namespace FastighetsKompassen.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tags");
+                    b.ToTable("MapTags");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.PoliceData.Location", b =>
@@ -753,6 +778,10 @@ namespace FastighetsKompassen.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FastighetsKompassen.Shared.Models.MapData.MapRoot", null)
+                        .WithMany("Features")
+                        .HasForeignKey("MapRootId");
+
                     b.HasOne("FastighetsKompassen.Shared.Models.MapData.MapProperties", "Properties")
                         .WithMany("Municipalities")
                         .HasForeignKey("PropertiesId")
@@ -898,6 +927,11 @@ namespace FastighetsKompassen.API.Migrations
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapProperties", b =>
                 {
                     b.Navigation("Municipalities");
+                });
+
+            modelBuilder.Entity("FastighetsKompassen.Shared.Models.MapData.MapRoot", b =>
+                {
+                    b.Navigation("Features");
                 });
 
             modelBuilder.Entity("FastighetsKompassen.Shared.Models.PoliceData.PoliceEvent", b =>

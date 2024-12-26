@@ -3,6 +3,7 @@ using EFCore.BulkExtensions;
 using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Shared.Models;
 using FastighetsKompassen.Shared.Models.ErrorHandling;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FastighetsKompassen.Infrastructure.Services;
@@ -135,4 +136,43 @@ public class KommunService
 
         return Result.Success();
     }
+
+    public async Task<object> GetLatestRealEstate(string kommunId)
+    {
+
+
+        var kommun = await _dbContext.RealEstateData
+            .FirstOrDefaultAsync(x => x.Kommun.Kommun == kommunId);
+
+        if(kommun == null)
+        {
+            return Result.Failure("kommun finns inte");
+        }
+
+        var result = _dbContext.RealEstateData
+            .Where(x => x.Kommun.Kommun == kommunId)
+            .OrderByDescending(x => x.SoldAt)
+            .Select( g => new
+            {
+                Id = g.Id,
+                Street = g.Street,
+                SoldDate = g.SoldAt,
+                Latitude = g.Latitude,
+                Longitude = g.Longitude
+            })
+            .Take(25)
+            .ToList();
+
+        return result;
+    }
+
+    public async Task<object> GetRealEstateById(int realEstateId)
+    {
+        var result = await _dbContext.RealEstateData.FirstOrDefaultAsync(x => x.Id == realEstateId);
+        if (result == null)
+            return result;
+        return result;
+       
+    }
+
 }

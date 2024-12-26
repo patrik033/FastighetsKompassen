@@ -1,5 +1,6 @@
 ﻿
 using FastighetsKompassen.Shared.Models;
+using FastighetsKompassen.Shared.Models.MapData;
 using FastighetsKompassen.Shared.Models.PoliceData;
 using FastighetsKompassen.Shared.Models.RealEstate;
 using FastighetsKompassen.Shared.Models.SkolData;
@@ -33,6 +34,10 @@ namespace FastighetsKompassen.Infrastructure.Data
         public DbSet<PoliceEventSummary> PoliceEventSummary { get; set; }
         public DbSet<RealEstateData> RealEstateData { get; set; }
         public DbSet<RealEstateYearlySummary> RealEstateYearlySummary { get; set; }
+        public DbSet<MapFeatures> Features { get; set; }
+        public DbSet<MapGeometry> Geometries { get; set; }
+        public DbSet<MapProperties> Properties { get; set; }
+        public DbSet<MapTags> Tags { get; set; }
 
 
 
