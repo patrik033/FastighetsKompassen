@@ -13,110 +13,61 @@ namespace FastighetsKompassen.API.Services
             _context = context;
         }
 
-        public async Task<List<KommunRankingDto>> GetKommunRankingAsync(int year)
+        public async Task<PaginatedResult<KommunRankingDto>> GetKommunRankingAsync(int year, int page, int pageSize)
         {
-            const decimal RealEstateMax = 10000000M;
-            const decimal LifeTimeMax = 90M;
-            const decimal AverageAgeMax = 50M;
-            const decimal CrimeMax = 10000M;
-            const decimal SchoolMax = 5M; // Maxpoäng för skolresultat (2 + 3)
+            const decimal RealEstateMax = 5000M;
+            const decimal LifeTimeMax = 1000M;
+            const decimal AverageAgeMax = 1000M;
+            const decimal CrimeMax = 50000M;
+            const decimal SchoolMax = 5000M;
 
             const decimal RealEstateWeight = 0.1M;
-            const decimal LifeTimeWeight = 0.3M;
-            const decimal AverageAgeWeight = 0.2M;
-            const decimal CrimeWeight = 0.3M;
-            const decimal SchoolWeight = 0.1M;
+            const decimal LifeTimeWeight = 0.1M;
+            const decimal AverageAgeWeight = 0.1M;
+            const decimal CrimeWeight = 0.4M;
+            const decimal SchoolWeight = 0.3M;
 
-            var convertedYear = year.ToString();
+            // Ladda data för aktuellt och föregående år
+            var currentYearData = await LoadAggregatedData(year, RealEstateMax, LifeTimeMax, AverageAgeMax, CrimeMax, SchoolMax);
+            var previousYearData = await LoadAggregatedData(year - 1, RealEstateMax, LifeTimeMax, AverageAgeMax, CrimeMax, SchoolMax);
 
-            // Ladda all nödvändig data batchvis
-            var realEstateData = await _context.RealEstateYearlySummary
-                .AsNoTracking()
-                .Where(r => r.Year == year)
-                .GroupBy(r => r.KommunId)
-                .Select(g => new { KommunId = g.Key, AvgSales = g.Average(r => (decimal?)r.TotalSalesAmount / r.SalesCount) })
-                .ToDictionaryAsync(r => r.KommunId);
-
-            var middleAgeData = await _context.AverageMiddleAge
-                .AsNoTracking()
-                .Where(a => a.Year == year)
-                .GroupBy(a => a.KommunDataId)
-                .Select(g => new { KommunId = g.Key, AvgAge = g.Average(a => (decimal?)a.Total) })
-                .ToDictionaryAsync(a => a.KommunId);
-
-            var lifeTimeData = await _context.AverageLifeTime
-                .AsNoTracking()
-                .Where(l => l.YearSpan == "2019-2023")
-                .GroupBy(l => l.KommunDataId)
-                .Select(g => new { KommunId = g.Key, AvgLifeTime = g.Average(l => (decimal?)((l.MaleValue + l.FemaleValue) / 2)) })
-                .ToDictionaryAsync(l => l.KommunId);
-
-            var crimeData = await _context.PoliceEventSummary
-                .AsNoTracking()
-                .Where(pe => pe.Year == year)
-                .GroupBy(pe => pe.KommunId)
-                .Select(g => new
-                {
-                    KommunId = g.Key,
-                    SeriousCrimes = g.Where(pe => pe.EventType == "Rån" || pe.EventType == "Mord/dråp" || pe.EventType == "Mord/dråp, försök").Sum(pe => (decimal?)pe.EventCount) ?? 0,
-                    MinorCrimes = g.Where(pe => pe.EventType == "Småbrott").Sum(pe => (decimal?)pe.EventCount) ?? 0
-                })
-                .ToDictionaryAsync(c => c.KommunId);
-
-            var schoolDataYearNine = await _context.SchoolResultsGradeNine
-                .AsNoTracking()
-                .Where(s => s.StartYear == year)
-                .GroupBy(s => s.KommunId)
-                .Select(g => new
-                {
-                    KommunId = g.Key,
-                    AvgScore = g.Average(s => (decimal?)s.GradePoints) // Betyg 2 + 3
-                })
-                .ToDictionaryAsync(s => s.KommunId);
-
-            var schoolDataYearSix = await _context.SchoolResultsGradeSix
-               .AsNoTracking()
-               .Where(s => s.StartYear == year)
-               .GroupBy(s => s.KommunId)
-               .Select(g => new
-               {
-                   KommunId = g.Key,
-                   AvgScore = g.Average(s => (decimal?)s.GradePoints) // Betyg 2 + 3
-               })
-               .ToDictionaryAsync(s => s.KommunId);
-
-            // Hämta och beräkna rankingen
+            // Ladda alla kommuner
             var kommuner = await _context.Kommuner.AsNoTracking().ToListAsync();
-            var result = kommuner
-                .Select(k =>
+
+            // Kombinera data och beräkna förändring
+            var rankedKommuner = currentYearData
+                .Select(data => new KommunRankingDto
                 {
-                    var realEstateScore = realEstateData.TryGetValue(k.Id, out var realEstate) ? (realEstate.AvgSales ?? 0) / RealEstateMax : 0;
-                    var ageScore = middleAgeData.TryGetValue(k.Id, out var ageData) ? (ageData.AvgAge ?? 0) / AverageAgeMax : 0;
-                    var lifeTimeScore = lifeTimeData.TryGetValue(k.Id, out var lifeTime) ? (lifeTime.AvgLifeTime ?? 0) / LifeTimeMax : 0;
-
-                    var crimeScore = crimeData.TryGetValue(k.Id, out var crime)
-                        ? 1 - ((crime.SeriousCrimes * 0.6M + crime.MinorCrimes * 0.4M) / CrimeMax)
-                        : 0;
-
-                    var schoolScoreNine = schoolDataYearNine.TryGetValue(k.Id, out var school) ? (school.AvgScore ?? 0) / SchoolMax : 0;
-                    var schoolSchoreSix = schoolDataYearSix.TryGetValue(k.Id, out var schoolsix) ? (schoolsix.AvgScore ?? 0) / SchoolMax : 0;
-                    return new KommunRankingDto
-                    {
-                        Kommun = k.Kommun,
-                        KommunNamn = k.Kommunnamn,
-                        TotalScore = (realEstateScore * RealEstateWeight) +
-                                     (ageScore * AverageAgeWeight) +
-                                     (lifeTimeScore * LifeTimeWeight) +
-                                     (crimeScore * CrimeWeight) +
-                                     (schoolScoreNine * SchoolWeight) +
-                                     (schoolSchoreSix * SchoolWeight)
-                    };
+                    Kommun = data.Value.Kommun,
+                    KommunNamn = kommuner.First(k => k.Id == data.Key).Kommunnamn,
+                    TotalScore = Math.Round(data.Value.TotalScore ?? 0, 2), // Hanterar null-värden
+                    ScoreChange = previousYearData.TryGetValue(data.Key, out var prevData)
+                        ? Math.Round((data.Value.TotalScore ?? 0) - (prevData.TotalScore ?? 0), 2) // Hanterar null-värden
+                        : (decimal?)null
                 })
                 .OrderByDescending(k => k.TotalScore)
                 .ToList();
 
-            return result;
+
+            // Paginerad data
+            var totalCount = rankedKommuner.Count;
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            var items = rankedKommuner.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            return new PaginatedResult<KommunRankingDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                CurrentPage = page
+            };
         }
+
+
+
+ 
+
+
 
         public async Task<List<KommunTrendDto>> GetKommunTrendsAsync(string kommunId, int[] years)
         {
@@ -180,9 +131,119 @@ namespace FastighetsKompassen.API.Services
             return results.OrderByDescending(r => r.Year).ToList();
         }
 
+        private async Task<Dictionary<int, AggregatedData>> LoadAggregatedData(
+            int year,
+            decimal realEstateMax,
+            decimal lifeTimeMax,
+            decimal averageAgeMax,
+            decimal crimeMax,
+            decimal schoolMax)
+            {
+                var realEstateData = await LoadRealEstateData(year);
+                var middleAgeData = await LoadMiddleAgeData(year);
+                var lifeTimeData = await LoadLifeTimeData(year);
+                var crimeData = await LoadCrimeData(year);
+                var schoolData = await LoadSchoolData(year);
+
+                var kommuner = await _context.Kommuner.AsNoTracking().ToListAsync();
+
+                return kommuner.ToDictionary(k => k.Id, k =>
+                {
+                    var realEstateScore = realEstateData.TryGetValue(k.Id, out var realEstate) ? (realEstate ?? 0) / realEstateMax : 0;
+                    var ageScore = middleAgeData.TryGetValue(k.Id, out var age) ? (age ?? 0) / averageAgeMax : 0;
+                    var lifeTimeScore = lifeTimeData.TryGetValue(k.Id, out var lifeTime) ? (lifeTime ?? 0) / lifeTimeMax : 0;
+
+                    var crimeScore = crimeData.TryGetValue(k.Id, out var crime)
+                        ? 1 - ((crime.SeriousCrimes * 0.6M + crime.MinorCrimes * 0.4M) / crimeMax)
+                        : 0;
+
+                    var schoolScore = schoolData.TryGetValue(k.Id, out var school)
+                        ? (school.GradeNineScore + school.GradeSixScore) / 2 / schoolMax
+                        : 0;
+
+                    return new AggregatedData
+                    {
+                        TotalScore = realEstateScore * 0.1M +
+                                     ageScore * 0.2M +
+                                     lifeTimeScore * 0.3M +
+                                     crimeScore * 0.3M +
+                                     schoolScore * 0.1M,
+                        Kommun = k.Kommun
+                    };
+                });
+            }
+
+        private async Task<Dictionary<int, decimal?>> LoadRealEstateData(int year)
+        {
+            return await _context.RealEstateYearlySummary
+                .AsNoTracking()
+                .Where(r => r.Year == year)
+                .GroupBy(r => r.KommunId)
+                .Select(g => new { KommunId = g.Key, AvgSales = g.Average(r => (decimal?)r.TotalSalesAmount / r.SalesCount) })
+                .ToDictionaryAsync(r => r.KommunId, r => r.AvgSales);
+        }
 
 
+        private async Task<Dictionary<int, decimal?>> LoadMiddleAgeData(int year)
+        {
+            return await _context.AverageMiddleAge
+                .AsNoTracking()
+                .Where(a => a.Year == year)
+                .GroupBy(a => a.KommunDataId)
+                .Select(g => new { KommunId = g.Key, AvgAge = g.Average(a => (decimal?)a.Total) })
+                .ToDictionaryAsync(a => a.KommunId, a => a.AvgAge);
+        }
+
+        private async Task<Dictionary<int, decimal?>> LoadLifeTimeData(int year)
+        {
+            return await _context.AverageLifeTime
+                .AsNoTracking()
+                .Where(l => l.YearSpan == "2019-2023")
+                .GroupBy(l => l.KommunDataId)
+                .Select(g => new { KommunId = g.Key, AvgLifeTime = g.Average(l => (decimal?)((l.MaleValue + l.FemaleValue) / 2)) })
+                .ToDictionaryAsync(l => l.KommunId, l => l.AvgLifeTime);
+        }
 
 
+        private async Task<Dictionary<int, CrimeData>> LoadCrimeData(int year)
+        {
+            return await _context.PoliceEventSummary
+                .AsNoTracking()
+                .Where(pe => pe.Year == year)
+                .GroupBy(pe => pe.KommunId)
+                .Select(g => new
+                {
+                    KommunId = g.Key,
+                    SeriousCrimes = g.Where(pe => pe.EventType == "Rån" || pe.EventType == "Mord/dråp").Sum(pe => (decimal?)pe.EventCount) ?? 0,
+                    MinorCrimes = g.Where(pe => pe.EventType == "Småbrott").Sum(pe => (decimal?)pe.EventCount) ?? 0
+                })
+                .ToDictionaryAsync(c => c.KommunId, c => new CrimeData { SeriousCrimes = c.SeriousCrimes, MinorCrimes = c.MinorCrimes });
+        }
+
+
+        private async Task<Dictionary<int, SchoolData>> LoadSchoolData(int year)
+        {
+            var gradeNine = await _context.SchoolResultsGradeNine
+                .AsNoTracking()
+                .Where(s => s.StartYear == year)
+                .GroupBy(s => s.KommunId)
+                .Select(g => new { KommunId = g.Key, AvgScore = g.Average(s => (decimal?)s.GradePoints) })
+                .ToDictionaryAsync(s => s.KommunId, s => s.AvgScore);
+
+            var gradeSix = await _context.SchoolResultsGradeSix
+                .AsNoTracking()
+                .Where(s => s.StartYear == year)
+                .GroupBy(s => s.KommunId)
+                .Select(g => new { KommunId = g.Key, AvgScore = g.Average(s => (decimal?)s.GradePoints) })
+                .ToDictionaryAsync(s => s.KommunId, s => s.AvgScore);
+
+            return gradeNine.Keys.Union(gradeSix.Keys).ToDictionary(
+                id => id,
+                id => new SchoolData
+                {
+                    GradeNineScore = gradeNine.TryGetValue(id, out var nineScore) ? nineScore : 0,
+                    GradeSixScore = gradeSix.TryGetValue(id, out var sixScore) ? sixScore : 0
+                });
+        }
     }
 }
