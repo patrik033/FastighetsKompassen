@@ -20,7 +20,7 @@ namespace FastighetsKompassen.API.Services
         {
             var latestYear = await _context.SchoolResultsGradeNine
                 .Where(s => s.Kommun.Kommun == kommunId)
-                .MaxAsync(s => s.StartYear);
+                .MaxAsync(s => s.EndYear);
 
             var result = new ChartDataDTO
             {
@@ -110,7 +110,7 @@ namespace FastighetsKompassen.API.Services
         {
             return _context.SchoolResultsGradeNine
                 .AsNoTracking()
-                .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == year)
+                .Where(s => s.Kommun.Kommun == kommunId && s.EndYear == year)
                 .GroupBy(s => s.Subject)
                 .Select(sr => new SchoolResultDTO
                 {
@@ -123,7 +123,7 @@ namespace FastighetsKompassen.API.Services
         {
             return _context.SchoolResultsGradeNine
                 .AsNoTracking()
-                .Where(s => s.Kommun.Kommun == kommunId && s.StartYear == year)
+                .Where(s => s.Kommun.Kommun == kommunId && s.EndYear == year)
                 .GroupBy(s => s.SchoolName)
                 .Select(ts => new TopSchoolDTO
                 {

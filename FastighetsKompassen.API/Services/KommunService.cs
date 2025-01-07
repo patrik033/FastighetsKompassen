@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using EFCore.BulkExtensions;
+using FastighetsKompassen.API.Features.RealEstate.Query.GetLatestRealEstateByMuniplicity;
 using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Shared.Models;
 using FastighetsKompassen.Shared.Models.ErrorHandling;
@@ -137,22 +138,22 @@ public class KommunService
         return Result.Success();
     }
 
-    public async Task<object> GetLatestRealEstate(string kommunId)
+    public async Task<Result<List<GetLatestRealEstatateByMuniplicityDTO>>> GetLatestRealEstateByMuniplicity(string kommunId)
     {
 
 
         var kommun = await _dbContext.RealEstateData
             .FirstOrDefaultAsync(x => x.Kommun.Kommun == kommunId);
 
-        if(kommun == null)
+        if (kommun == null)
         {
-            return Result.Failure("kommun finns inte");
+            return Result<List<GetLatestRealEstatateByMuniplicityDTO>>.Failure("Kommun finns inte");
         }
 
-        var result = _dbContext.RealEstateData
+        var result = await _dbContext.RealEstateData
             .Where(x => x.Kommun.Kommun == kommunId)
             .OrderByDescending(x => x.SoldAt)
-            .Select( g => new
+            .Select( g => new GetLatestRealEstatateByMuniplicityDTO
             {
                 Id = g.Id,
                 Street = g.Street,
@@ -161,9 +162,9 @@ public class KommunService
                 Longitude = g.Longitude
             })
             .Take(25)
-            .ToList();
+            .ToListAsync();
 
-        return result;
+        return Result<List<GetLatestRealEstatateByMuniplicityDTO>>.Success(result);
     }
 
     public async Task<object> GetRealEstateById(int realEstateId)

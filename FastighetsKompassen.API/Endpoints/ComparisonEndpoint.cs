@@ -1,6 +1,5 @@
-﻿using FastighetsKompassen.API.Services;
-using FastighetsKompassen.Shared.Models.DTO;
-using Microsoft.AspNetCore.Http.HttpResults;
+﻿using FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FastighetsKompassen.API.Endpoints
@@ -8,25 +7,13 @@ namespace FastighetsKompassen.API.Endpoints
     public static class ComparisonEndpoint
     {
 
-
-
-   
         public static void MapComparisonEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapPost("/api/comparison", async (ComparisonRequestDTO request, ComparisonService comparisonService) =>
+            app.MapPost("/api/comparison", async ([FromBody] GetComparisonResultQuery query,  ISender sender) =>
             {
-                try
-                {
-                var results = await comparisonService.CompareMunicipalities(request);
+                var results = await sender.Send(query);
                 return Results.Ok(results);
-
-                }
-                catch (Exception ex)
-                {
-                    return Results.BadRequest(new { error = "Invalid JSON format", details = ex.Message });
-
-                }
-            });
+            }).WithTags("Comparison");
         }
     }
 }

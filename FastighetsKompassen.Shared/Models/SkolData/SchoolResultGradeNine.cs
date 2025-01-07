@@ -12,7 +12,7 @@ namespace FastighetsKompassen.Shared.Models.SkolData
         public string Subject { get; set; }  // Nytt fält för att markera vilket ämne datan tillhör
         public string EducationLevel { get; set; } // Nytt fält för utbildningsnivå (Årskurs 6, 9 eller Gymnasium)
                                                    //skola
-        public int StartYear { get; set; }
+        public int EndYear { get; set; }
         public string SchoolName { get; set; }
         //skol-enhetskod
         public int SchoolUnitCode { get; set; }
@@ -29,8 +29,7 @@ namespace FastighetsKompassen.Shared.Models.SkolData
 
         //(saknas) - huvudmanorgnr
         public double? HeadOrganizationNumber { get; set; }
-        public string SubTest { get; set; }  // "Delprov"
-        public string? TestCode { get; set; }
+
         public double? TotalParticipation { get; set; } // Som deltagit - Totalt
         public double? FemaleParticipation { get; set; } // Som deltagit - Flickor
         public double? MaleParticipation { get; set; } // Som deltagit - Pojkar

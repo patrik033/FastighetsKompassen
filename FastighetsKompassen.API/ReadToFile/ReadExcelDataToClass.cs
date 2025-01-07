@@ -56,7 +56,7 @@ namespace FastighetsKompassen.API.ReadToFile
 
         private void FillGradeSixData(ExcelWorksheet worksheet, SchoolResultGradeSix result, int row, int year, string educationLevel, string subject)
         {
-            result.StartYear = year;
+            result.EndYear = year;
             result.EducationLevel = educationLevel;
             result.Subject = subject;
 
@@ -86,7 +86,7 @@ namespace FastighetsKompassen.API.ReadToFile
 
         private void FillGradeNineData(ExcelWorksheet worksheet, SchoolResultGradeNine result, int row, int year, string educationLevel, string subject)
         {
-            result.StartYear = year;
+            result.EndYear = year;
             result.EducationLevel = educationLevel;
             result.Subject = subject;
 
@@ -97,8 +97,8 @@ namespace FastighetsKompassen.API.ReadToFile
             result.HeadOrganizationType = worksheet.Cells[row, 5].Text;
             result.HeadOrganizationName = worksheet.Cells[row, 6].Text;
             result.HeadOrganizationNumber = ParseNullableDouble(worksheet.Cells[row, 7].Text);
-            result.TestCode = worksheet.Cells[row, 8].Text;
-            result.SubTest = worksheet.Cells[row, 9].Text;
+          //  result.TestCode = worksheet.Cells[row, 8].Text;
+            //result.SubTest = worksheet.Cells[row, 9].Text;
 
             result.TotalGradeAF = ParseNullableDouble(worksheet.Cells[row, 10].Text); // Provbetyg A-F Totalt
             result.FemaleGradeAF = ParseNullableDouble(worksheet.Cells[row, 11].Text); // Provbetyg A-F Flickor

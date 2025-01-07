@@ -20,8 +20,8 @@ namespace FastighetsKompassen.Shared.Models
         public string? Kommunnamn { get; set; }
 
         //livslängs, inkomst och skolresultat
+        public List<AverageLifeTime>? AverageLifeTime { get; set; } = new List<AverageLifeTime>();
         public List<AverageMiddleAge>? AverageMiddleAge { get; set; } = new List<AverageMiddleAge>();
-        public AverageLifeTime? AverageLifeTime { get; set; }
         public List<Income>? Income { get; set; } = new List<Income>();
 
 
@@ -34,13 +34,16 @@ namespace FastighetsKompassen.Shared.Models
 
         // Listor för att lagra alla polis- och fastighetshändelser
         public List<PoliceEvent> PoliceEvents { get; set; } = new List<PoliceEvent>(); // Ny lista för relaterade händelser
+        public List<RealEstateData> RealEstateDataList { get; set; } = new List<RealEstateData>();
+
+
+
+        // Sammanställning av fastighetsdata per år
+
+        public List<RealEstateYearlySummary> RealEstateYearlySummary { get; set; } = new List<RealEstateYearlySummary>();
+
         // Sammanställning av polishändelser per typ och år
         public List<PoliceEventSummary> PoliceEventSummary { get; set; } = new List<PoliceEventSummary>();
-
-
-        public List<RealEstateData> RealEstateDataList { get; set; } = new List<RealEstateData> { };
-        // Sammanställning av fastighetsdata per år
-        public List<RealEstateYearlySummary> RealEstateYearlySummary { get; set; } = new List<RealEstateYearlySummary>();
 
     }
 }

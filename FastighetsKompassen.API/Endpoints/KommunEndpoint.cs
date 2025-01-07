@@ -1,9 +1,11 @@
 ﻿
+using FastighetsKompassen.API.Features.RealEstate.Query.GetLatestRealEstateByMuniplicity;
 using FastighetsKompassen.API.Services;
 using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Infrastructure.Services;
 using FastighetsKompassen.Kommuner.Interfaces;
-using FastighetsKompassen.Shared.Models.MapData;
+using FastighetsKompassen.Shared.Models.ErrorHandling;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using Newtonsoft.Json;
@@ -14,63 +16,34 @@ namespace FastighetsKompassen.API.Endpoints
     public static class KommunEndpoint
     {
 
-        private static JToken CapitalizeKeys(JToken token)
-        {
-            if (token is JObject obj)
-            {
-                var newObj = new JObject();
-                foreach (var property in obj.Properties())
-                {
-                    var newKey = CapitalizeFirstLetter(property.Name);
-                    newObj[newKey] = CapitalizeKeys(property.Value);
-                }
-                return newObj;
-            }
-            else if (token is JArray array)
-            {
-                var newArray = new JArray();
-                foreach (var item in array)
-                {
-                    newArray.Add(CapitalizeKeys(item));
-                }
-                return newArray;
-            }
-            return token;
-        }
-
-        private static string CapitalizeFirstLetter(string key)
-        {
-            if (string.IsNullOrEmpty(key)) return key;
-            return char.ToUpper(key[0]) + key.Substring(1);
-        }
+        
+       
         public static void MapKommunEndpoints(this IEndpointRouteBuilder app)
         {
 
-
+            //TODO: Flytta
             app.MapDelete("/api/kommun/{kommunId}", async (int kommunId, KommunService kommunService) =>
             {
                 var result = await kommunService.DeleteKommunAsync(kommunId);
                 return result.IsSuccess ? Results.Ok("Kommunen och dess relaterade data har tagits bort.") : Results.BadRequest(result.Error);
             })
-            .WithTags("Kommun")
+            .WithTags("RealEstate")
             .WithName("DeleteKommun");
 
 
 
 
-            app.MapGet("/api/kommuner/realestate/{kommunId}", async (string kommunId, KommunService kommunService) =>
-            {
-                var result = await kommunService.GetLatestRealEstate(kommunId);
-                return result;
-            })
-            .WithTags("Kommun");
 
+
+
+
+            //TODO: Flytta
             app.MapGet("/api/kommuner/realestateById/{realEstateId}", async (int realEstateId, KommunService kommunService) =>
             {
                 var result = await kommunService.GetRealEstateById(realEstateId);
                 return result;
             })
-           .WithTags("Kommun");
+           .WithTags("RealEstate");
 
 
             // Endpoint för att ladda upp data
@@ -96,7 +69,7 @@ namespace FastighetsKompassen.API.Endpoints
 
                .WithName("UploadKommunJson")
                .DisableAntiforgery()
-               .WithTags("Kommun")
+               .WithTags("Upload")
                .Accepts<IFormFile>("multipart/form-data")
                .Produces(200)
                .Produces(400)
@@ -145,62 +118,14 @@ namespace FastighetsKompassen.API.Endpoints
             })
                 .WithName("UploadMultipleKommunJson")
                 .DisableAntiforgery()
-                .WithTags("Kommun")
+                .WithTags("Upload")
                 .Accepts<IFormFileCollection>("multipart/form-data")
                 .Produces(200)
                 .Produces(400)
                 .Produces(500);
 
 
-            app.MapPost("/api/upload-geo-data", async (IFormFile file, AppDbContext dbContext) =>
-            {
-                if (file == null || file.Length == 0)
-                {
-                    return Results.BadRequest("Ingen fil uppladdad.");
-                }
-
-                try
-                {
-                    // Läs filen
-                    using var stream = file.OpenReadStream();
-                    using var reader = new StreamReader(stream);
-                    var jsonContent = await reader.ReadToEndAsync();
-
-                    // Transformera JSON och deserialisera till objekt
-                    var json = JObject.Parse(jsonContent);
-                    var transformedJson = CapitalizeKeys(json);
-
-                    // Deserialisera till dina C#-klasser
-                    var root = transformedJson.ToObject<MapRoot>();
-
-                    if (root == null || root.Features == null)
-                    {
-                        return Results.BadRequest("Ogiltig JSON-struktur.");
-                    }
-
-                    // Lägg till i databasen
-                    foreach (var feature in root.Features)
-                    {
-                        dbContext.Features.Add(new MapFeatures
-                        {
-                            Type = feature.Type,
-                            Geometry = feature.Geometry,
-                            Properties = feature.Properties
-                        });
-                    }
-
-                    await dbContext.SaveChangesAsync();
-
-                    return Results.Ok("Datan har sparats till databasen.");
-                }
-                catch (Exception ex)
-                {
-                    return Results.BadRequest($"Ett fel inträffade: {ex.Message}");
-                }
-            })
-                .DisableAntiforgery()
-               .WithTags("Kommun")
-               .Accepts<IFormFile>("multipart/form-data");
+            
 
 
 
@@ -245,7 +170,7 @@ namespace FastighetsKompassen.API.Endpoints
             })
     .WithName("UploadKommunFromFolder")
     .DisableAntiforgery()
-    .WithTags("Kommun")
+    .WithTags("Upload")
     .Produces(200)
     .Produces(400)
     .Produces(404)

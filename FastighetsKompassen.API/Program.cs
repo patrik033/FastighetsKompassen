@@ -1,12 +1,18 @@
 using FastighetsKompassen.API.Endpoints;
 using FastighetsKompassen.API.Extensions;
+using FastighetsKompassen.API.Health;
 using FastighetsKompassen.API.ReadToFile;
 using FastighetsKompassen.API.Services;
+using FastighetsKompassen.API.Validation;
 using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Infrastructure.Services;
+using FluentValidation;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OfficeOpenXml;
 
 
@@ -30,6 +36,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
     b => b.MigrationsAssembly("FastighetsKompassen.API")));
 
+builder.Services.ConfigureHealthChecks(builder.Configuration);
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddMediatR(config =>
+{
+    config.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+});
+
 
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
@@ -51,14 +65,8 @@ builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<KommunService>();
 builder.Services.AddScoped<PoliceService>();
 builder.Services.AddScoped<RealEstateService>();
-builder.Services.AddScoped<SchoolService>();
 builder.Services.AddScoped<ChartService>();
 builder.Services.AddScoped<KPIService>();
-builder.Services.AddScoped<ComparisonService>();
-builder.Services.AddScoped<StatisticsService>();
-
-
-
 
 
 // Add services to the container.
@@ -73,6 +81,7 @@ var app = builder.Build();
 
 
 app.UseCors();
+app.UseMiddleware<ValidationExceptionHandlingMiddleware>();
 app.MapKommunEndpoints();
 app.MapBackupEndpoints();
 app.MapPoliceEndpoints();
@@ -82,7 +91,11 @@ app.MapChartsEndpoints();
 app.MapKPIEndpoints();
 app.MapComparisonEndpoints();
 app.MapStatisticsEndpoints();
-
+app.MapHealthChecks("/api/health", new HealthCheckOptions()
+{
+    Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

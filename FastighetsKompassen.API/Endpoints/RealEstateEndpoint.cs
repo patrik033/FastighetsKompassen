@@ -1,5 +1,7 @@
-﻿using FastighetsKompassen.API.Services;
+﻿using FastighetsKompassen.API.Features.RealEstate.Query.GetLatestRealEstateByMuniplicity;
+using FastighetsKompassen.API.Services;
 using FastighetsKompassen.Shared.Models.RealEstate;
+using MediatR;
 
 namespace FastighetsKompassen.API.Endpoints
 {
@@ -19,6 +21,13 @@ namespace FastighetsKompassen.API.Endpoints
                     return Results.Problem($"Ett fel inträffade: {ex.Message}");
                 }
             });
+
+            app.MapGet("/api/kommuner/realestate/{kommunId}", async ([AsParameters] GetLatestRealEstateByMuniplicityQuery query, ISender sender) =>
+            {
+                var result = await sender.Send(query);
+                return Results.Ok(result.Data);
+            })
+          .WithTags("RealEstate");
         }
 
     }
