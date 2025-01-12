@@ -24,7 +24,8 @@ namespace FastighetsKompassen.API.Endpoints
                 var result = await sender.Send(query);
                 return result;
             })
-           .WithTags("Trends");
+           .WithTags("Trends")
+           .RequireRateLimiting("GlobalLimiter"); ;
         }
     }
 }

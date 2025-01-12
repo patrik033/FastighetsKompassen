@@ -1,54 +1,57 @@
 ﻿using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Shared.Models.DTO;
 using FastighetsKompassen.Shared.Models.ErrorHandling;
-using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-
-namespace FastighetsKompassen.API.Services
+namespace FastighetsKompassen.API.Features.Chart.Query.GetChart
 {
-    public class ChartService
+    public class GetChartHandler : IRequestHandler<GetChartQuery, Result<ChartDataDTO>>
     {
+
         private readonly AppDbContext _context;
-        public ChartService(AppDbContext context)
+
+        public GetChartHandler(AppDbContext context)
         {
             _context = context;
         }
 
-
-        public async Task<ChartDataDTO> GetChartData(string kommunId)
+        public async Task<Result<ChartDataDTO>> Handle(GetChartQuery request, CancellationToken cancellationToken)
         {
             var latestYear = await _context.SchoolResultsGradeNine
-                .Where(s => s.Kommun.Kommun == kommunId)
+                .Where(s => s.Kommun.Kommun == request.KommunId)
                 .MaxAsync(s => s.EndYear);
 
             var result = new ChartDataDTO
             {
-                PropertySales = await GetPropertySales(kommunId),
+                PropertySales = await GetPropertySales(request.KommunId),
 
-                CrimeDistribution = await GetCrimeDistribution(kommunId, latestYear)
+                CrimeDistribution = await GetCrimeDistribution(request.KommunId, latestYear)
                 .Take(5)
-                .ToListAsync(),
+                .ToListAsync(cancellationToken),
 
-                AvgIncome = await GetIncomeData(kommunId)
+                AvgIncome = await GetIncomeData(request.KommunId)
                 .Take(5)
-                .ToListAsync(),
+                .ToListAsync(cancellationToken),
 
-                AvgLifeExpectancy = await GetLifeExpectancy(kommunId)
-                .FirstOrDefaultAsync(),
+                AvgLifeExpectancy = await GetLifeExpectancy(request.KommunId)
+                .FirstOrDefaultAsync(cancellationToken),
 
-                SchoolResultYearNine = await GetSchoolResults(kommunId, latestYear)
-                .ToListAsync(),
+                SchoolResultYearNine = await GetSchoolResults(request.KommunId, latestYear)
+                .ToListAsync(cancellationToken),
 
-                TopSchools = await GetTopSchools(kommunId, latestYear)
-                .ToListAsync()
+                TopSchools = await GetTopSchools(request.KommunId, latestYear)
+                .ToListAsync(cancellationToken)
             };
 
-            return result;
+            if (result is null)
+                return Result<ChartDataDTO>.Failure("Ingen data returnerades, pröva en annan parameter");
+            else
+                return Result<ChartDataDTO>.Success(result);
         }
 
-    
-       private async Task<List<PropertySalesDTO>> GetPropertySales(string kommunId)
+
+        private async Task<List<PropertySalesDTO>> GetPropertySales(string kommunId)
         {
             // Hämta det senaste året för vald kommun
             var latestYear = await _context.RealEstateYearlySummary
@@ -73,7 +76,7 @@ namespace FastighetsKompassen.API.Services
 
             return propertySales;
         }
-        
+
 
         private IQueryable<CrimeDistributionDTO> GetCrimeDistribution(string kommunId, int year)
         {

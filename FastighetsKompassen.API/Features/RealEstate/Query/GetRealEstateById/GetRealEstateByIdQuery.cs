@@ -1,5 +1,4 @@
-﻿using FastighetsKompassen.API.Features.RealEstate.Query.GetLatestRealEstateByMuniplicity;
-using FastighetsKompassen.Shared.Models.ErrorHandling;
+﻿using FastighetsKompassen.Shared.Models.ErrorHandling;
 using MediatR;
 
 namespace FastighetsKompassen.API.Features.RealEstate.Query.GetRealEstateById

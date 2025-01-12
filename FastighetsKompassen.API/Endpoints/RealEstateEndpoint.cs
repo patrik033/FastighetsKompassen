@@ -16,6 +16,7 @@ namespace FastighetsKompassen.API.Endpoints
                 var result = await sender.Send(query);
                 return Results.Ok(result.Data);
             })
+            .RequireRateLimiting("GlobalLimiter")
             .WithTags("RealEstate")
             .WithName("GetLatestRealEstateByMuniplicity");
 
@@ -26,6 +27,7 @@ namespace FastighetsKompassen.API.Endpoints
                 var result = await sender.Send(query);
                 return Results.Ok(result.Data);
             })
+            .RequireRateLimiting("GlobalLimiter")
             .WithTags("RealEstate")
             .WithName("GetRealEstateById");
 
@@ -36,6 +38,7 @@ namespace FastighetsKompassen.API.Endpoints
                 var result = await sender.Send(query);
                 return Results.Ok(result.IsSuccess);
             })
+            .RequireRateLimiting("GlobalLimiter")
             .WithTags("RealEstate")
             .WithName("AddRealEstate");
         }

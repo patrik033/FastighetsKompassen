@@ -10,27 +10,55 @@ using FluentValidation;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using OfficeOpenXml;
+using System.Threading.RateLimiting;
+
+
 
 
 
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
-
+bool isProduction = builder.Environment.IsProduction();
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(builder =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        builder.AllowAnyOrigin()
-        .AllowAnyMethod()
-        .AllowAnyHeader();
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+
+    options.AddPolicy("RestrictToNextJs", policy =>
+    {
+        policy.WithOrigins("https://your-nextjs-domain.com", "http://localhost:3000") // Replace with your domains
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
+
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("GlobalLimiter", limiterOptions =>
+    {
+        
+        limiterOptions.PermitLimit = 1; // Max 10 requests per minute
+        limiterOptions.Window = TimeSpan.FromSeconds(12);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 10;
+    });
+});
+
+
+
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -57,13 +85,10 @@ builder.Services.Configure<FormOptions>(options =>
 
 
 
-//builder.Services.AddScoped<BackupService>();
 builder.Services.AddSingleton<ReadExcelDataToClass>();
-
 
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<KommunService>();
-builder.Services.AddScoped<ChartService>();
 
 
 // Add services to the container.
@@ -77,8 +102,12 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 
-app.UseCors();
+var corsPolicy = app.Environment.IsDevelopment() ? "AllowAll" : "RestrictToNextJs";
+app.UseCors(corsPolicy);
+
+app.UseRateLimiter();
 app.UseMiddleware<ValidationExceptionHandlingMiddleware>();
+
 //app.MapUploadEndpoint();
 //app.MapBackupEndpoints();
 app.MapRealEstateEndpoints();
@@ -101,11 +130,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
-
-
 app.UseHttpsRedirection();
-
-
-
 app.Run();
+
+

@@ -13,7 +13,7 @@ namespace FastighetsKompassen.API.Endpoints
         {
             app.MapDelete("/api/kommun/{kommunId}", async ([AsParameters] DeleteMuniplicityByIdQuery query, ISender sender) =>
             {
-                var result =  sender.Send(query);
+                var result = await sender.Send(query);
                 return Results.Ok(result);
             })
             .WithTags("Kommun")
