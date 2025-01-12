@@ -15,6 +15,7 @@ namespace FastighetsKompassen.API.Features.RealEstate.Query.GetLatestRealEstateB
             _context = context;
         }
 
+      
         public async Task<Result<List<GetLatestRealEstatateByMuniplicityDTO>>> Handle(GetLatestRealEstateByMuniplicityQuery request, CancellationToken cancellationToken)
         {
             var kommun = await _context.RealEstateData

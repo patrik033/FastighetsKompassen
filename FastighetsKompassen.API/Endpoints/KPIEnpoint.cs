@@ -1,4 +1,6 @@
-﻿using FastighetsKompassen.API.Services;
+﻿using FastighetsKompassen.API.Features.Kpi.Query.GetKPI;
+using FastighetsKompassen.API.Services;
+using MediatR;
 
 namespace FastighetsKompassen.API.Endpoints
 {
@@ -6,26 +8,13 @@ namespace FastighetsKompassen.API.Endpoints
     {
         public static void MapKPIEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapGet("/api/Dashboard/kpi", async (string kommun, KPIService kPIServices) =>
+            app.MapGet("/api/Dashboard/kpi", async ([AsParameters] GetKPIQuery query , ISender sender) =>
             {
-
-                try
-                {
-                    // Anropa din service för att hämta data
-                    var data = await kPIServices.GetKPIAsync(kommun);
-
-                    return Results.Ok(data); // Returnera resultatet som en 200 OK
-                }
-                catch (ArgumentException ex)
-                {
-                    return Results.BadRequest(new { error = ex.Message }); // 400 för ogiltig kommun
-                }
-                catch (Exception ex)
-                {
-                    return Results.Problem($"An error occurred: {ex.Message}"); // 500 för oväntade fel
-                }
-
-            });
+                var result = await sender.Send(query);
+                return Results.Ok(result.Data);
+            })
+                .WithTags("KPI")
+                .WithName("GetKPIData");
 
         }
     }

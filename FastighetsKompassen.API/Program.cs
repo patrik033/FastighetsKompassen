@@ -63,10 +63,7 @@ builder.Services.AddSingleton<ReadExcelDataToClass>();
 
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<KommunService>();
-builder.Services.AddScoped<PoliceService>();
-builder.Services.AddScoped<RealEstateService>();
 builder.Services.AddScoped<ChartService>();
-builder.Services.AddScoped<KPIService>();
 
 
 // Add services to the container.
@@ -82,15 +79,15 @@ var app = builder.Build();
 
 app.UseCors();
 app.UseMiddleware<ValidationExceptionHandlingMiddleware>();
-app.MapKommunEndpoints();
-app.MapBackupEndpoints();
-app.MapPoliceEndpoints();
+//app.MapUploadEndpoint();
+//app.MapBackupEndpoints();
 app.MapRealEstateEndpoints();
 app.MapSchoolEndpoints();
 app.MapChartsEndpoints();
 app.MapKPIEndpoints();
 app.MapComparisonEndpoints();
 app.MapStatisticsEndpoints();
+//app.MapKommunEndpoints();
 app.MapHealthChecks("/api/health", new HealthCheckOptions()
 {
     Predicate = _ => true,

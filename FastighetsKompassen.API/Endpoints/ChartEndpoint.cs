@@ -30,7 +30,9 @@ namespace FastighetsKompassen.API.Endpoints
                     return Results.Problem($"An error occurred: {ex.Message}"); // 500 för oväntade fel
                 }
 
-            });
+            })
+                 .WithTags("Chart")
+                .WithName("GetChartData");
 
         }
     }

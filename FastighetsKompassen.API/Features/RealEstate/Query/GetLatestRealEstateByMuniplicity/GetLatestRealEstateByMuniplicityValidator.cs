@@ -7,7 +7,8 @@ namespace FastighetsKompassen.API.Features.RealEstate.Query.GetLatestRealEstateB
         public GetLatestRealEstateByMuniplicityValidator()
         {
             RuleFor(x => x.KommunId)
-           .NotEmpty().WithMessage("KommunId får inte vara tom.");
+           .NotEmpty()
+           .WithMessage("KommunId får inte vara tom.");
           //.Length(8, 100).WithMessage("KommunId måste vara mellan 2 och 100 tecken.");
         }
     }

@@ -25,11 +25,23 @@ namespace FastighetsKompassen.API.Services
             var result = new ChartDataDTO
             {
                 PropertySales = await GetPropertySales(kommunId),
-                CrimeDistribution = await GetCrimeDistribution(kommunId, latestYear).Take(5).ToListAsync(),
-                AvgIncome = await GetIncomeData(kommunId).Take(5).ToListAsync(),
-                AvgLifeExpectancy = await GetLifeExpectancy(kommunId).FirstOrDefaultAsync(),
-                SchoolResultYearNine = await GetSchoolResults(kommunId, latestYear).ToListAsync(),
-                TopSchools = await GetTopSchools(kommunId, latestYear).ToListAsync()
+
+                CrimeDistribution = await GetCrimeDistribution(kommunId, latestYear)
+                .Take(5)
+                .ToListAsync(),
+
+                AvgIncome = await GetIncomeData(kommunId)
+                .Take(5)
+                .ToListAsync(),
+
+                AvgLifeExpectancy = await GetLifeExpectancy(kommunId)
+                .FirstOrDefaultAsync(),
+
+                SchoolResultYearNine = await GetSchoolResults(kommunId, latestYear)
+                .ToListAsync(),
+
+                TopSchools = await GetTopSchools(kommunId, latestYear)
+                .ToListAsync()
             };
 
             return result;
