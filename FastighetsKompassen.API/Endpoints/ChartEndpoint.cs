@@ -16,11 +16,21 @@ namespace FastighetsKompassen.API.Endpoints
             app.MapGet("/api/Dashboard/charts", async ([AsParameters] GetChartQuery query, ISender sender) =>
             {
                 var result = await sender.Send(query);
+                if (!result.IsSuccess)
+                {
+                    return Results.BadRequest(new { message = result.Error ?? "Ett okänt fel inträffade." });
+                }
                 return Results.Ok(result.Data);
 
             })
             .WithTags("Chart")
-            .WithName("GetChartData");
+            .WithName("GetChartData")
+            .WithOpenApi()
+            .RequireRateLimiting("GlobalLimiter")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status500InternalServerError);
         }
     }
 }

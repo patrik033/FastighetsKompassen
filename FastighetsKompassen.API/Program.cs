@@ -25,10 +25,13 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 var builder = WebApplication.CreateBuilder(args);
 bool isProduction = builder.Environment.IsProduction();
 
+builder.Services.AddMemoryCache();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
+       // policy.WithOrigins("http://localhost:3000") // Replace with your domains
+
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader();
@@ -49,8 +52,8 @@ builder.Services.AddRateLimiter(options =>
     options.AddFixedWindowLimiter("GlobalLimiter", limiterOptions =>
     {
         
-        limiterOptions.PermitLimit = 1; // Max 10 requests per minute
-        limiterOptions.Window = TimeSpan.FromSeconds(12);
+        limiterOptions.PermitLimit = 10; // Max 10 requests per minute
+        limiterOptions.Window = TimeSpan.FromSeconds(10);
         limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         limiterOptions.QueueLimit = 10;
     });

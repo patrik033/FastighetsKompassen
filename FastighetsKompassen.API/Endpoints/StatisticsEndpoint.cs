@@ -15,17 +15,38 @@ namespace FastighetsKompassen.API.Endpoints
             app.MapGet("/api/trends/ranking/", async ([AsParameters] GetKommunRankingQuery query,  ISender sender) =>
             {
                 var result = await sender.Send(query);
-                return Results.Ok(result);
+                if (!result.IsSuccess)
+                {
+                    return Results.BadRequest(new { message = result.Error ?? "Ett ökänt fel inträffade" });
+                }
+                return Results.Ok(result.Data);
             })
-            .WithTags("Trends");
+            .WithTags("Trends")
+            .WithName("GetKommunRanking")
+            .WithOpenApi()
+            .RequireRateLimiting("GlobalLimiter")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status500InternalServerError);
 
             app.MapPost("/api/trends/compare", async (GetKommunTrendsQuery query,ISender sender) =>
             {
                 var result = await sender.Send(query);
-                return result;
+                if (!result.IsSuccess)
+                {
+                    return Results.BadRequest(new { message = "Ett okänt fel inträffade" });
+                }
+                return Results.Ok(result.Data);
             })
            .WithTags("Trends")
-           .RequireRateLimiting("GlobalLimiter"); ;
+           .WithName("GetKommunTrends")
+           .WithOpenApi()
+           .RequireRateLimiting("GlobalLimiter")
+           .Produces(StatusCodes.Status200OK)
+           .Produces(StatusCodes.Status400BadRequest)
+           .Produces(StatusCodes.Status429TooManyRequests)
+           .Produces(StatusCodes.Status500InternalServerError); 
         }
     }
 }

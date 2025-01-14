@@ -3,7 +3,7 @@ using FastighetsKompassen.API.Features.RealEstate.Query.GetLatestRealEstateByMun
 using FastighetsKompassen.API.Services;
 using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Infrastructure.Services;
-using FastighetsKompassen.Kommuner.Interfaces;
+
 using FastighetsKompassen.Shared.Models.ErrorHandling;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -45,11 +45,12 @@ namespace FastighetsKompassen.API.Endpoints
                .WithName("UploadKommunJson")
                .DisableAntiforgery()
                .WithTags("Upload")
+               .WithOpenApi()
                .Accepts<IFormFile>("multipart/form-data")
-               .Produces(200)
-               .Produces(400)
-               .Produces(409)
-               .Produces(500);
+               .Produces(StatusCodes.Status200OK)
+               .Produces(StatusCodes.Status400BadRequest)
+               .Produces(StatusCodes.Status429TooManyRequests)
+               .Produces(StatusCodes.Status500InternalServerError);
 
           
 
@@ -90,11 +91,12 @@ namespace FastighetsKompassen.API.Endpoints
             })
             .WithName("UploadKommunFromFolder")
             .DisableAntiforgery()
+            .WithOpenApi()
             .WithTags("Upload")
-            .Produces(200)
-            .Produces(400)
-            .Produces(404)
-            .Produces(500);
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status500InternalServerError);
         }
     }
 }

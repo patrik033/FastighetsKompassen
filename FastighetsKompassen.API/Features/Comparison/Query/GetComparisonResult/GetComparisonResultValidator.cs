@@ -8,11 +8,15 @@ namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
         {
             RuleFor(query => query.Municipality1)
                 .NotEmpty()
-                .WithMessage("Municipality1 cannot be empty");
+                .WithMessage("Municipality1 cannot be empty")
+                .Length(4)
+                .WithMessage("The length must be 4");
 
             RuleFor(query => query.Municipality2) 
                 .NotEmpty()
-                .WithMessage("Municipality2 cannot be empty");
+                .WithMessage("Municipality2 cannot be empty")
+                 .Length(4)
+                .WithMessage("The length must be 4");
 
             RuleFor(query => query.Municipality1)
                 .NotEqual(x => x.Municipality2)

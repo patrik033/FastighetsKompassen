@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FastighetsKompassen.Shared.Models.DTO
+namespace FastighetsKompassen.API.Features.Kpi.Query.GetKPI
 {
     public class KpiDTO
     {

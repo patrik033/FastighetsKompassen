@@ -1,11 +1,12 @@
 ﻿using FastighetsKompassen.Infrastructure.Data;
 using FastighetsKompassen.Shared.Models.DTO.Statistics;
+using FastighetsKompassen.Shared.Models.ErrorHandling;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FastighetsKompassen.API.Features.Statistics.Commands.GetKommunTrends
 {
-    public class GetKommunTrendsHandler : IRequestHandler<GetKommunTrendsQuery,List<KommunTrendDto>>
+    public class GetKommunTrendsHandler : IRequestHandler<GetKommunTrendsQuery,Result<List<KommunTrendDto>>>
     {
         private readonly AppDbContext _context;
         public GetKommunTrendsHandler(AppDbContext context)
@@ -14,7 +15,7 @@ namespace FastighetsKompassen.API.Features.Statistics.Commands.GetKommunTrends
         }
 
 
-        public async Task<List<KommunTrendDto>> Handle(GetKommunTrendsQuery request, CancellationToken cancellationToken)
+        public async Task<Result<List<KommunTrendDto>>> Handle(GetKommunTrendsQuery request, CancellationToken cancellationToken)
         {
             var results = new List<KommunTrendDto>();
 
@@ -75,9 +76,13 @@ namespace FastighetsKompassen.API.Features.Statistics.Commands.GetKommunTrends
                 });
             }
 
-            return results.OrderByDescending(r => r.Year).ToList();
-        }
+            var orderedResult = results.OrderByDescending(r => r.Year).ToList();
 
-     
+            if(orderedResult.Count > 0)
+            {
+                return Result<List<KommunTrendDto>>.Success(orderedResult);
+            }
+            return Result<List<KommunTrendDto>>.Failure("Ingen data returnerades, pröva en annan parameter");
+        }
     }
 }

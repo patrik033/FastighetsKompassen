@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using FastighetsKompassen.API.Features.Statistics.Commands.GetKommunRanking;
 using FastighetsKompassen.Infrastructure.Data;
+using FastighetsKompassen.Shared.Models.ErrorHandling;
 
 namespace FastighetsKompassen.API.Features.Statistics.GetKommunRanking;
 
-public class GetKommunRankingHandler : IRequestHandler<GetKommunRankingQuery, PaginatedResult<KommunRankingDto>>
+public class GetKommunRankingHandler : IRequestHandler<GetKommunRankingQuery, Result<PaginatedResult<KommunRankingDto>>>
 {
     private readonly AppDbContext _context;
 
@@ -16,7 +17,7 @@ public class GetKommunRankingHandler : IRequestHandler<GetKommunRankingQuery, Pa
 
 
 
-    public async Task<PaginatedResult<KommunRankingDto>> Handle(GetKommunRankingQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<KommunRankingDto>>> Handle(GetKommunRankingQuery request, CancellationToken cancellationToken)
     {
         const decimal RealEstateMax = 5000M;
         const decimal LifeTimeMax = 1000M;
@@ -24,38 +25,102 @@ public class GetKommunRankingHandler : IRequestHandler<GetKommunRankingQuery, Pa
         const decimal CrimeMax = 50000M;
         const decimal SchoolMax = 5000M;
 
-        var currentYearData = await LoadAggregatedData(request.Year, RealEstateMax, LifeTimeMax, AverageAgeMax, CrimeMax, SchoolMax);
-        var previousYearData = await LoadAggregatedData(request.Year - 1, RealEstateMax, LifeTimeMax, AverageAgeMax, CrimeMax, SchoolMax);
+        // 1) Hämta nuvarande och föregående års rådata
+        var currentYearData = await LoadAggregatedData(request.Year,
+            RealEstateMax, LifeTimeMax, AverageAgeMax, CrimeMax, SchoolMax);
+        var previousYearData = await LoadAggregatedData(request.Year - 1,
+            RealEstateMax, LifeTimeMax, AverageAgeMax, CrimeMax, SchoolMax);
 
         var kommuner = await _context.Kommuner.AsNoTracking().ToListAsync();
 
-        var rankedKommuner = currentYearData
-            .Select(data => new KommunRankingDto
+        // 2) Beräkna rankning för föregående år (utan paginering)
+        var previousYearRanks = previousYearData
+            .OrderByDescending(x => x.Value.TotalScore ?? 0)
+            .Select((x, index) => new
             {
-                Kommun = data.Value.Kommun,
-                KommunNamn = kommuner.First(k => k.Id == data.Key).Kommunnamn,
-                TotalScore = Math.Round(data.Value.TotalScore ?? 0, 2),
-                ScoreChange = previousYearData.TryGetValue(data.Key, out var prevData)
-                    ? Math.Round((data.Value.TotalScore ?? 0) - (prevData.TotalScore ?? 0), 2)
-                    : (decimal?)null
+                KommunId = x.Key,
+                Rank = index + 1 // 1-baserad rank
             })
-            .OrderByDescending(k => k.TotalScore)
+            .ToDictionary(x => x.KommunId, x => x.Rank);
+
+        // 3) Beräkna rankning för innevarande år (utan paginering)
+        //    Här sorterar vi efter TotalScore desc och sätter Rank = index + 1
+        var currentYearRankData = currentYearData
+            .OrderByDescending(x => x.Value.TotalScore ?? 0)
+            .Select((x, index) => new
+            {
+                KommunId = x.Key,
+                AggregatedData = x.Value,
+                Rank = index + 1 // 1-baserad rank
+            })
+            .ToList();
+
+        // 4) Bygg ihop en lista av KommunRankingDto
+        //    - Räkna ut ScoreChange (år över år) som förr
+        //    - Räkna ut RankChange med skillnad i rank
+        var rankedKommuner = currentYearRankData
+            .Select(x =>
+            {
+                var currentScore = x.AggregatedData.TotalScore ?? 0m;
+                var prevScore = previousYearData.TryGetValue(x.KommunId, out var prevData)
+                    ? (prevData.TotalScore ?? 0m)
+                    : 0m;
+
+                var kommunObj = kommuner.First(k => k.Id == x.KommunId);
+
+                // RankChange => (Föregående rank) - (Nuvarande rank)
+                var prevRank = previousYearRanks.TryGetValue(x.KommunId, out var pr)
+                    ? pr
+                    : (int?)null;
+
+                int? rankChange = null;
+                if (prevRank.HasValue)
+                {
+                    rankChange = prevRank.Value - x.Rank;
+                }
+
+                return new KommunRankingDto
+                {
+                    Kommun = x.AggregatedData.Kommun,
+                    KommunNamn = kommunObj.Kommunnamn,
+                    TotalScore = Math.Round(currentScore, 2),
+                    ScoreChange = Math.Round(currentScore - prevScore, 2),
+
+                    // Nya fält
+                    Rank = x.Rank,
+                    RankChange = rankChange
+                };
+            })
+            .ToList();
+
+        // 5) Nu har vi en helsorterad lista med "globala" ranker (1..N).
+        //    Slutligen kör vi paginering:
+        var totalCount = rankedKommuner.Count;
+        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
+
+        var items = rankedKommuner
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToList();
 
 
-        //paginated data
-        var totalCount = rankedKommuner.Count;
-        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
-        var items = rankedKommuner.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToList();
-
-        return new PaginatedResult<KommunRankingDto>
+        var paginetedResult = new PaginatedResult<KommunRankingDto>
         {
             Items = items,
             TotalCount = totalCount,
             TotalPages = totalPages,
             CurrentPage = request.Page
         };
+
+
+        if(items.Count > 0)
+        {
+            return Result<PaginatedResult<KommunRankingDto>>.Success(paginetedResult);
+        }
+        return Result<PaginatedResult<KommunRankingDto>>.Failure("Ingen data returnerades, pröva en annan paramater");
+      
     }
+
 
     private async Task<Dictionary<int, AggregatedData>> LoadAggregatedData(
         int year,

@@ -24,9 +24,11 @@ namespace FastighetsKompassen.API.Endpoints
             .WithName("UploadSchoolResultsGradeSix")
             .DisableAntiforgery()
             .WithTags("SchoolResults")
+            .WithOpenApi()
             .Accepts<AddSchoolResultCommand<SchoolResultGradeSix>>("multipart/form-data")
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
             .Produces(StatusCodes.Status500InternalServerError); 
 
 
@@ -44,9 +46,11 @@ namespace FastighetsKompassen.API.Endpoints
             .WithName("UploadSchoolResultsGradeNine")
             .DisableAntiforgery()
             .WithTags("SchoolResults")
+            .WithOpenApi()
             .Accepts<AddSchoolResultCommand<SchoolResultGradeNine>>("multipart/form-data")
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
             .Produces(StatusCodes.Status500InternalServerError); 
         }
     }

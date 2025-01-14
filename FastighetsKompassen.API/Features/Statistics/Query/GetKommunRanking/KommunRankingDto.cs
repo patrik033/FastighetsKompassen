@@ -12,5 +12,8 @@ namespace FastighetsKompassen.API.Features.Statistics.GetKommunRanking
         public string KommunNamn { get; set; }
         public decimal? TotalScore { get; set; }
         public decimal? ScoreChange { get; set; }
+
+        public int Rank { get; set; }
+        public int? RankChange { get; set; }
     }
 }

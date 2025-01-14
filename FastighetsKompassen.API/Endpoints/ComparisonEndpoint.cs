@@ -12,8 +12,20 @@ namespace FastighetsKompassen.API.Endpoints
             app.MapPost("/api/comparison", async ([FromBody] GetComparisonResultQuery query,  ISender sender) =>
             {
                 var results = await sender.Send(query);
-                return Results.Ok(results);
-            }).WithTags("Comparison");
+                if (!results.IsSuccess)
+                {
+                    return Results.BadRequest(new {message = results.Error?? "Ett okänt fel inträffade"});
+                }
+                return Results.Ok(results.Data);
+            })
+            .WithTags("Comparison")
+            .WithName("GetComparisonResult")
+            .WithOpenApi()
+            .RequireRateLimiting("GlobalLimiter")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status500InternalServerError);
         }
     }
 }

@@ -14,8 +14,9 @@ namespace FastighetsKompassen.API.Endpoints
             })
             .WithName("CreateDatabaseBackup")
             .WithTags("Database")
-            .Produces(200)
-            .Produces(400);
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest);
         }
     }
 }

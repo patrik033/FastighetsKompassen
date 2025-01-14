@@ -1,11 +1,14 @@
 ﻿using FastighetsKompassen.Infrastructure.Data;
-using FastighetsKompassen.Shared.Models.DTO;
+using FastighetsKompassen.Shared.Models;
+using FastighetsKompassen.Shared.Models.ErrorHandling;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
 {
-    public class GetComparisonResultHandler : IRequestHandler<GetComparisonResultQuery, List<ComparisonResultDTO>>
+    public class GetComparisonResultHandler : IRequestHandler<GetComparisonResultQuery, Result<List<ComparisonResultDTO>>>
     {
         private readonly AppDbContext _context;
 
@@ -14,227 +17,355 @@ namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
             _context = context;
         }
 
-        public async Task<List<ComparisonResultDTO>> Handle(GetComparisonResultQuery request, CancellationToken cancellationToken)
+        public async Task<Result<List<ComparisonResultDTO>>> Handle(GetComparisonResultQuery request, CancellationToken cancellationToken)
         {
             var results = new List<ComparisonResultDTO>();
 
-            foreach (var parameter  in request.Parameters)
+            foreach (var parameter in request.Parameters)
             {
-                switch (parameter)
+                var result = await HandleComparison(parameter, request.Municipality1, request.Municipality2);
+
+                if (!result.IsSuccess)
                 {
-                    case ComparisonParameter.SchoolResults:
-                        results.AddRange(await CompareSchoolResults(request.Municipality1, request.Municipality2));
-                        break;
-                    case ComparisonParameter.PropertySales:
-                        results.AddRange(await ComparePropertySales(request.Municipality1, request.Municipality2));
-                        break;
-                    case ComparisonParameter.TotalSales:
-                        results.Add(await CompareTotalSales(request.Municipality1, request.Municipality2));
-                        break;
-                    case ComparisonParameter.TotalCrimes:
-                        results.Add(await CompareTotalCrimes(request.Municipality1, request.Municipality2));
-                        break;
-                    case ComparisonParameter.AvgIncome:
-                        results.Add(await CompareAvgIncome(request.Municipality1, request.Municipality2));
-                        break;
-                    case ComparisonParameter.AvgLifeExpectancy:
-                        results.Add(await CompareAvgLifeExpectancy(request.Municipality1, request.Municipality2));
-                        break;
+                    return Result<List<ComparisonResultDTO>>.Failure(result.Error);
                 }
+
+                results.AddRange(result.Data);
             }
-            return results;
+
+            return results.Count > 0
+                ? Result<List<ComparisonResultDTO>>.Success(results)
+                : Result<List<ComparisonResultDTO>>.Failure("Ingen data returnerades, pröva en annan parameter");
         }
 
-        private async Task<List<ComparisonResultDTO>> CompareSchoolResults(string kommunId1, string kommunId2)
+
+        private async Task<Result<List<ComparisonResultDTO>>> HandleComparison(
+            ComparisonParameter parameter,
+            string municipality1,
+            string municipality2)
+        {
+            return parameter switch
+            {
+                ComparisonParameter.SchoolResults => await CompareSchoolResults(municipality1, municipality2),
+                ComparisonParameter.PropertySales => await ComparePropertySales(municipality1, municipality2),
+                ComparisonParameter.TotalSales => await CompareSingleResult(() => CompareTotalSales(municipality1, municipality2)),
+                ComparisonParameter.TotalCrimes => await CompareSingleResult(() => CompareTotalCrimes(municipality1, municipality2)),
+                ComparisonParameter.AvgIncome => await CompareSingleResult(() => CompareAvgIncome(municipality1, municipality2)),
+                ComparisonParameter.AvgLifeExpectancy => await CompareSingleResult(() => CompareAvgLifeExpectancy(municipality1, municipality2)),
+                _ => Result<List<ComparisonResultDTO>>.Failure("Ogiltig parameter angiven.")
+            };
+        }
+
+        private async Task<Result<List<ComparisonResultDTO>>> CompareSingleResult(
+            Func<Task<Result<ComparisonResultDTO>>> comparison)
+        {
+            var result = await comparison();
+            return result.IsSuccess
+                ? Result<List<ComparisonResultDTO>>.Success(new List<ComparisonResultDTO> { result.Data })
+                : Result<List<ComparisonResultDTO>>.Failure(result.Error);
+        }
+
+
+        private async Task<Result<List<ComparisonResultDTO>>> CompareSchoolResults(string kommunId1, string kommunId2)
         {
             var results = new List<ComparisonResultDTO>();
-            var schoolResults1 = await GetLatestSchoolResults(kommunId1);
-            var schoolResults2 = await GetLatestSchoolResults(kommunId2);
 
-            foreach (var subject in schoolResults1.Keys)
+            // Hämta skolresultat för första kommunen
+            var schoolResults1 = await GetLatestSchoolResults(kommunId1);
+            if (!schoolResults1.IsSuccess)
             {
-                if (schoolResults2.ContainsKey(subject))
+                return Result<List<ComparisonResultDTO>>.Failure($"{schoolResults1.Error}");
+            }
+
+            // Hämta skolresultat för andra kommunen
+            var schoolResults2 = await GetLatestSchoolResults(kommunId2);
+            if (!schoolResults2.IsSuccess)
+            {
+                return Result<List<ComparisonResultDTO>>.Failure($"{schoolResults2.Error}");
+            }
+
+            // Skapa jämförelser för varje ämne som finns i båda kommunerna
+            foreach (var subject in schoolResults1.Data.Keys)
+            {
+                if (schoolResults2.Data.ContainsKey(subject))
                 {
                     results.Add(CreateComparisonResult(
                         ComparisonParameter.SchoolResults,
                         kommunId1,
                         kommunId2,
-                        schoolResults1[subject],
-                        schoolResults2[subject],
+                        schoolResults1.Data[subject],
+                        schoolResults2.Data[subject],
                         fieldName: subject // Lägg till ämnesnamnet
                     ));
                 }
             }
 
-            return results;
+            return Result<List<ComparisonResultDTO>>.Success(results);
         }
 
-        private async Task<List<ComparisonResultDTO>> ComparePropertySales(string kommunId1, string kommunId2)
+
+        private async Task<Result<List<ComparisonResultDTO>>> ComparePropertySales(string kommunId1, string kommunId2)
         {
             var results = new List<ComparisonResultDTO>();
-            var propertySales1 = await GetLatestPropertySales(kommunId1);
-            var propertySales2 = await GetLatestPropertySales(kommunId2);
 
-            foreach (var propertyType in propertySales1.Keys)
+
+            var propertySales1 = await GetLatestPropertySales(kommunId1);
+            if (!propertySales1.IsSuccess)
             {
-                if (propertySales2.ContainsKey(propertyType))
+                return Result<List<ComparisonResultDTO>>.Failure($"Kunde inte hämta property sales för kommun {propertySales1}. Fel: {propertySales1.Error}");
+            }
+            var propertySales2 = await GetLatestPropertySales(kommunId2);
+            if (!propertySales2.IsSuccess)
+            {
+                return Result<List<ComparisonResultDTO>>.Failure($"Kunde inte hämta property sales för kommun {propertySales2}. Fel: {propertySales2.Error}");
+            }
+
+            foreach (var propertyType in propertySales1.Data.Keys)
+            {
+                if (propertySales2.Data.ContainsKey(propertyType))
                 {
                     results.Add(CreateComparisonResult(
                         ComparisonParameter.PropertySales,
                         kommunId1,
                         kommunId2,
-                        propertySales1[propertyType],
-                        propertySales2[propertyType],
+                        propertySales1.Data[propertyType],
+                        propertySales2.Data[propertyType],
                         fieldName: propertyType // Lägg till fastighetstyp
                     ));
                 }
             }
 
-            return results;
+            return Result<List<ComparisonResultDTO>>.Success(results);
         }
 
-        private async Task<ComparisonResultDTO> CompareTotalSales(string kommunId1, string kommunId2)
+        private async Task<Result<ComparisonResultDTO>> CompareTotalSales(string kommunId1, string kommunId2)
         {
             var sales1 = await GetLatestTotalSales(kommunId1);
+            if (!sales1.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {sales1}. Fel: {sales1.Error}");
+            }
             var sales2 = await GetLatestTotalSales(kommunId2);
+            if (!sales2.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {sales2}. Fel: {sales2.Error}");
+            }
 
-            return CreateComparisonResult(
+
+            var result = CreateComparisonResult(
                 ComparisonParameter.TotalSales,
                 kommunId1,
                 kommunId2,
-                sales1,
-                sales2,
+                sales1.Data,
+                sales2.Data,
                 fieldName: "Totala försäljningar");
+
+            return Result<ComparisonResultDTO>.Success(result);
         }
 
-        private async Task<ComparisonResultDTO> CompareTotalCrimes(string kommunId1, string kommunId2)
+        private async Task<Result<ComparisonResultDTO>> CompareTotalCrimes(string kommunId1, string kommunId2)
         {
             var crimes1 = await GetLatestTotalCrimes(kommunId1);
+            if (!crimes1.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {crimes1}. Fel: {crimes1.Error}");
+            }
             var crimes2 = await GetLatestTotalCrimes(kommunId2);
+            if (!crimes2.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {crimes2}. Fel: {crimes2.Error}");
+            }
 
-            return CreateComparisonResult(
+            var result = CreateComparisonResult(
                 ComparisonParameter.TotalCrimes,
                 kommunId1,
                 kommunId2,
-                crimes1,
-                crimes2,
+                crimes1.Data,
+                crimes2.Data,
                 fieldName: "Totala brott");
+
+            return Result<ComparisonResultDTO>.Success(result);
         }
 
-        private async Task<ComparisonResultDTO> CompareAvgIncome(string kommunId1, string kommunId2)
+        private async Task<Result<ComparisonResultDTO>> CompareAvgIncome(string kommunId1, string kommunId2)
         {
             var income1 = await GetLatestAvgIncome(kommunId1);
+            if (!income1.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {income1}. Fel: {income1.Error}");
+            }
             var income2 = await GetLatestAvgIncome(kommunId2);
-
-            return CreateComparisonResult(
+            if (!income2.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {income2}. Fel: {income2.Error}");
+            }
+            var result = CreateComparisonResult(
                 ComparisonParameter.AvgIncome,
                 kommunId1,
                 kommunId2,
-                income1,
-                income2,
+                income1.Data,
+                income2.Data,
                 fieldName: "Genomsnittlig inkomst");
+            return Result<ComparisonResultDTO>.Success(result);
         }
 
-        private async Task<ComparisonResultDTO> CompareAvgLifeExpectancy(string kommunId1, string kommunId2)
+        private async Task<Result<ComparisonResultDTO>> CompareAvgLifeExpectancy(string kommunId1, string kommunId2)
         {
             var life1 = await GetLatestLifeExpectancy(kommunId1);
+            if (!life1.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {life1}. Fel: {life1.Error}");
+            }
             var life2 = await GetLatestLifeExpectancy(kommunId2);
+            if (!life2.IsSuccess)
+            {
+                return Result<ComparisonResultDTO>.Failure($"Kunde inte hämta property sales för kommun {life2}. Fel: {life2.Error}");
+            }
 
-            return CreateComparisonResult(
+            var result = CreateComparisonResult(
                 ComparisonParameter.AvgLifeExpectancy,
                 kommunId1,
                 kommunId2,
-                life1,
-                life2,
+                life1.Data,
+                life2.Data,
                 fieldName: "Förväntad livslängd");
+            return Result<ComparisonResultDTO>.Success(result);
         }
 
-        private async Task<decimal> GetLatestTotalSales(string kommunId)
+        private async Task<Result<decimal>> GetLatestTotalSales(string kommunId)
         {
-            return await _context.RealEstateYearlySummary
-                .Where(r => r.Kommun.Kommun == kommunId)
-                .GroupBy(r => r.Year)
-                .OrderByDescending(g => g.Key)
-                .Select(g => g.Sum(r => r.SalesCount))
-                .FirstOrDefaultAsync();
+            return await ExecuteSafelyAsync(async () =>
+            {
+                return await _context.RealEstateYearlySummary
+                    .Where(r => r.Kommun.Kommun == kommunId)
+                    .GroupBy(r => r.Year)
+                    .OrderByDescending(g => g.Key)
+                    .Select(g => g.Sum(r => (decimal)r.SalesCount))
+                    .FirstOrDefaultAsync();
+            }, "");
         }
 
-        private async Task<decimal> GetLatestTotalCrimes(string kommunId)
+
+
+        private async Task<Result<decimal>> GetLatestTotalCrimes(string kommunId)
         {
-            return await _context.PoliceEventSummary
-                .Where(p => p.Kommun.Kommun == kommunId)
-                .GroupBy(p => p.Year)
-                .OrderByDescending(g => g.Key)
-                .Select(g => g.Sum(p => (decimal)p.EventCount))
-                .FirstOrDefaultAsync();
+            return await ExecuteSafelyAsync(async () =>
+            {
+
+                return await _context.PoliceEventSummary
+                    .Where(p => p.Kommun.Kommun == kommunId)
+                    .GroupBy(p => p.Year)
+                    .OrderByDescending(g => g.Key)
+                    .Select(g => g.Sum(p => (decimal)p.EventCount))
+                    .FirstOrDefaultAsync();
+            }, "Ettt fel uppstod vid hämtning utav TotalCrimes");
         }
 
-        private async Task<decimal> GetLatestAvgIncome(string kommunId)
+
+        private async Task<Result<decimal>> GetLatestAvgIncome(string kommunId)
         {
-            return await _context.Income
-                .Where(i => i.Kommun.Kommun == kommunId && i.IncomeComponent == "240")
-                .GroupBy(i => i.Year)
-                .OrderByDescending(g => g.Key)
-                .Select(g => g.Average(i => i.MiddleValue))
-                .FirstOrDefaultAsync();
+            return await ExecuteSafelyAsync(async () =>
+            {
+
+                return await _context.Income
+                    .Where(i => i.Kommun.Kommun == kommunId && i.IncomeComponent == "240")
+                    .GroupBy(i => i.Year)
+                    .OrderByDescending(g => g.Key)
+                    .Select(g => g.Average(i => i.MiddleValue))
+                    .FirstOrDefaultAsync();
+            }, "Ett fel uppstod vid hämtning av AvgIncome");
         }
 
-        private async Task<decimal> GetLatestLifeExpectancy(string kommunId)
+        private async Task<Result<decimal>> GetLatestLifeExpectancy(string kommunId)
         {
-            return await _context.AverageLifeTime
-                .Where(l => l.Kommun.Kommun == kommunId)
-                .OrderByDescending(l => l.YearSpan)
-                .Select(l => (l.MaleValue + l.FemaleValue) / 2)
-                .FirstOrDefaultAsync();
+            return await ExecuteSafelyAsync(async () =>
+            {
+
+                return await _context.AverageLifeTime
+                    .Where(l => l.Kommun.Kommun == kommunId)
+                    .OrderByDescending(l => l.YearSpan)
+                    .Select(l => (l.MaleValue + l.FemaleValue) / 2)
+                    .FirstOrDefaultAsync();
+
+            }, "Ett fel uppstod vid hämtning av LifeExpectancy");
         }
 
-        private async Task<Dictionary<string, decimal>> GetLatestSchoolResults(string kommunId)
+        private async Task<Result<Dictionary<string, decimal>>> GetLatestSchoolResults(string kommunId)
         {
-            var latestYear = await _context.SchoolResultsGradeNine
-                .Where(s => s.Kommun.Kommun == kommunId)
-                .MaxAsync(s => s.EndYear);
+            return await ExecuteSafelyAsync(async () =>
+            {
+                var latestYear = await _context.SchoolResultsGradeNine
+                    .Where(s => s.Kommun.Kommun == kommunId)
+                    .MaxAsync(s => s.EndYear);
 
-            return await _context.SchoolResultsGradeNine
-                .Where(s => s.Kommun.Kommun == kommunId && s.EndYear == latestYear)
-                .GroupBy(s => s.Subject)
-                .ToDictionaryAsync(
-                    g => g.Key,
-                    g => (decimal)(g.Average(s => (double?)s.GradePoints) ?? 0)
-                );
+                return await _context.SchoolResultsGradeNine
+                     .Where(s => s.Kommun.Kommun == kommunId && s.EndYear == latestYear)
+                     .GroupBy(s => s.Subject)
+                     .ToDictionaryAsync(
+                         g => g.Key,
+                         g => (decimal)(g.Average(s => (double?)s.GradePoints) ?? 0)
+                     );
+            }, "Ett fel uppstod vid hämtning av skolresultat");
         }
 
-        private async Task<Dictionary<string, decimal>> GetLatestPropertySales(string kommunId)
+        private async Task<Result<Dictionary<string, decimal>>> GetLatestPropertySales(string kommunId)
         {
-            var year = await _context.RealEstateYearlySummary
-                .Where(r => r.Kommun.Kommun == kommunId)
-                .MaxAsync(r => r.Year);
+            return await ExecuteSafelyAsync(async () =>
+            {
+                var year = await _context.RealEstateYearlySummary
+                   .Where(r => r.Kommun.Kommun == kommunId)
+                   .MaxAsync(r => r.Year);
 
-            return await _context.RealEstateYearlySummary
-                .Where(r => r.Kommun.Kommun == kommunId && r.Year == year)
-                .GroupBy(r => r.PropertyType)
-                .ToDictionaryAsync(
-                    g => g.Key,
-                    g => (decimal)g.Sum(r => r.SalesCount)
-                );
+                return await _context.RealEstateYearlySummary
+                   .Where(r => r.Kommun.Kommun == kommunId && r.Year == year)
+                   .GroupBy(r => r.PropertyType)
+                   .ToDictionaryAsync(
+                       g => g.Key,
+                       g => (decimal)g.Sum(r => r.SalesCount)
+                   );
+            }, "Étt fel uppstod vid hämtning av propertysales");
         }
+
+        private async Task<Result<T>> ExecuteSafelyAsync<T>(
+            Func<Task<T>> action,
+            string customMessage,
+            [CallerMemberName] string methodName = "")
+        {
+            try
+            {
+                var result = await action();
+
+                if (result == null || (result is ICollection collection && collection.Count == 0))
+                {
+                    return Result<T>.Failure($"[{methodName}] Resultatet var tomt eller null. {customMessage}");
+                }
+
+                return Result<T>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return Result<T>.Failure($" {methodName}  Fel: {ex.Message}");
+            }
+        }
+
 
         private ComparisonResultDTO CreateComparisonResult(
             ComparisonParameter parameter,
-            string kommun1,
-            string kommun2,
-            decimal value1,
-            decimal value2,
+            string firstKommun,
+            string secondKommun,
+            decimal kommunFirstValue,
+            decimal kommunSecondValue,
             string fieldName)
         {
             return new ComparisonResultDTO
             {
                 Parameter = parameter.ToString(), // Enum converted to its name
-                Municipality1 = kommun1,
-                Municipality2 = kommun2,
-                Value1 = value1,
-                Value2 = value2,
-                Difference = value1 - value2,
-                PercentageDifference = value2 != 0 ? ((value1 - value2) / value2) * 100 : 0,
+                Municipality1 = firstKommun,
+                Municipality2 = secondKommun,
+                Value1 = kommunFirstValue,
+                Value2 = kommunSecondValue,
+                Difference = kommunFirstValue - kommunSecondValue,
+                PercentageDifference = kommunSecondValue != 0 ? ((kommunFirstValue - kommunSecondValue) / kommunSecondValue) * 100 : 0,
                 FieldName = fieldName // Optional field for additional details
             };
         }

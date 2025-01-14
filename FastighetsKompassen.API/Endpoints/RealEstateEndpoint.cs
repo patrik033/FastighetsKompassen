@@ -13,34 +13,61 @@ namespace FastighetsKompassen.API.Endpoints
 
             app.MapGet("/api/kommuner/realestate/{kommunId}", async ([AsParameters] GetLatestRealEstateByMuniplicityQuery query, ISender sender) =>
             {
-                var result = await sender.Send(query);
-                return Results.Ok(result.Data);
+                var results = await sender.Send(query);
+                if (!results.IsSuccess)
+                {
+                    return Results.BadRequest(new { message = results.Error ?? "Ett okänt fel inträffade" });
+                }
+                return Results.Ok(results.Data);
             })
-            .RequireRateLimiting("GlobalLimiter")
             .WithTags("RealEstate")
-            .WithName("GetLatestRealEstateByMuniplicity");
+            .WithName("GetLatestRealEstateByMuniplicity")
+            .WithOpenApi()
+            .RequireRateLimiting("GlobalLimiter")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status500InternalServerError);
 
 
 
             app.MapGet("/api/kommuner/realestateById/{realEstateId}", async ([AsParameters] GetRealEstateByIdQuery query, ISender sender) =>
             {
                 var result = await sender.Send(query);
+                if (!result.IsSuccess)
+                {
+                    return Results.BadRequest(new { message = result.Error ?? "Ett okänt fel inträffade" });
+                }
                 return Results.Ok(result.Data);
             })
-            .RequireRateLimiting("GlobalLimiter")
             .WithTags("RealEstate")
-            .WithName("GetRealEstateById");
+            .WithName("GetRealEstateById")
+            .WithOpenApi()
+            .RequireRateLimiting("GlobalLimiter")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status500InternalServerError);
 
 
 
             app.MapPost("/api/real-estate", async ([FromBody] AddRealEstatesCommand query,ISender sender) =>
             {
                 var result = await sender.Send(query);
-                return Results.Ok(result.IsSuccess);
+                if (!result.IsSuccess)
+                {
+                    return Results.BadRequest(new { message = result.Error ?? "Ett okänt fel inträffade" });
+                }
+                return Results.Ok(result);
             })
-            .RequireRateLimiting("GlobalLimiter")
             .WithTags("RealEstate")
-            .WithName("AddRealEstate");
+            .WithName("AddRealEstate")
+            .WithOpenApi()
+            .RequireRateLimiting("GlobalLimiter")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status500InternalServerError);
         }
     }
 }
