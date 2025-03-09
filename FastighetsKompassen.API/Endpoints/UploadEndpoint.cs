@@ -41,7 +41,6 @@ namespace FastighetsKompassen.API.Endpoints
                     return Results.Problem($"Ett fel inträffade: {ex.Message}");
                 }
             })
-
                .WithName("UploadKommunJson")
                .DisableAntiforgery()
                .WithTags("Upload")

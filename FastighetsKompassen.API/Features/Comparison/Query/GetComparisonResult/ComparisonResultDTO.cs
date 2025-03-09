@@ -15,6 +15,7 @@ namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
         public decimal Value2 { get; set; }
         public decimal Difference { get; set; }
         public decimal PercentageDifference { get; set; }
+        public decimal TimesLarger { get; set; }
         public string? FieldName { get; set; } // Additional field to display for School Results or Property Sales
     }
 }

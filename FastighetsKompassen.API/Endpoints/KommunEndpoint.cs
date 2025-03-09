@@ -1,4 +1,5 @@
 ﻿using FastighetsKompassen.API.Features.Muniplicity.Command.DeleteMuniplicityById;
+using FastighetsKompassen.API.HATEOAS;
 using FastighetsKompassen.API.Services;
 using FastighetsKompassen.Infrastructure.Services;
 using FastighetsKompassen.Shared.Models.ErrorHandling;
@@ -11,13 +12,21 @@ namespace FastighetsKompassen.API.Endpoints
 
         public static void MapKommunEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapDelete("/api/kommun/{kommunId}", async ([AsParameters] DeleteMuniplicityByIdQuery query, ISender sender) =>
+            app.MapDelete("/api/kommun/{kommunId}", async ([AsParameters] DeleteMuniplicityByIdQuery query, ISender sender,IHateoasService hateoas) =>
             {
                 var result = await sender.Send(query);
                 if (!result.IsSuccess)
                 {
                     return Results.BadRequest(new { message = result.Error ?? "Ett okänt fel inträffade" });
                 }
+
+                var data = result;
+                var links = new List<Link>
+                {
+                    hateoas.CreateLink("DeleteKommun",query,"self","DELETE")
+                };
+
+                var resource = hateoas.Wrap(data, links);
                 return Results.Ok(result);
             })
             .WithTags("Kommun")

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using Azure.Identity;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace FastighetsKompassen.API.Health
 {
@@ -7,7 +8,9 @@ namespace FastighetsKompassen.API.Health
         public static void ConfigureHealthChecks(this IServiceCollection services,IConfiguration config)
         {
             services.AddHealthChecks()
-                .AddSqlServer(config["ConnectionStrings:DefaultConnection"]
+
+
+                .AddSqlServer(config.GetConnectionString("DefaultConnection")
                 , healthQuery: "select 1"
                 , name: "SQL Server"
                 , failureStatus: HealthStatus.Unhealthy

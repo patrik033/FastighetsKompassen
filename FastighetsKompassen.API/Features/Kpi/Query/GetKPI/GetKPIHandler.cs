@@ -27,6 +27,12 @@ namespace FastighetsKompassen.API.Features.Kpi.Query.GetKPI
                 return Result<KpiDTO>.Success(cachedKpiData);
             }
 
+            var latestYear = await _context.PoliceEventSummary
+                .Where(s => s.Kommun.Kommun == request.KommunId)
+                .MaxAsync(s => s.Year);
+
+
+
 
             var kpiData = await _context.RealEstateYearlySummary
                  .AsNoTracking()
@@ -39,7 +45,7 @@ namespace FastighetsKompassen.API.Features.Kpi.Query.GetKPI
 
                      TotalCrimes = _context.PoliceEventSummary
                      .AsNoTracking()
-                     .Where(p => p.Kommun.Kommun == request.KommunId && p.Year == g.Key)
+                     .Where(p => p.Kommun.Kommun == request.KommunId && p.Year == latestYear)
                      .Sum(p => p.EventCount),
 
                      MiddleAge = _context.AverageMiddleAge

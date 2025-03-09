@@ -3,6 +3,7 @@ using FastighetsKompassen.Shared.Models;
 using FastighetsKompassen.Shared.Models.ErrorHandling;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Collections;
 using System.Runtime.CompilerServices;
 
@@ -11,14 +12,27 @@ namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
     public class GetComparisonResultHandler : IRequestHandler<GetComparisonResultQuery, Result<List<ComparisonResultDTO>>>
     {
         private readonly AppDbContext _context;
+        private readonly IMemoryCache _cache;
 
-        public GetComparisonResultHandler(AppDbContext context)
+        public GetComparisonResultHandler(AppDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         public async Task<Result<List<ComparisonResultDTO>>> Handle(GetComparisonResultQuery request, CancellationToken cancellationToken)
         {
+
+            var cacheKey = $"ComparisonResultData_{request.Municipality1}_{request.Municipality2}_{string.Join(",", request.Parameters)}";
+
+            // Kontrollera om resultatet redan finns i cache
+            if (_cache.TryGetValue(cacheKey, out List<ComparisonResultDTO> cachedData))
+            {
+                return Result<List<ComparisonResultDTO>>.Success(cachedData);
+            }
+
+
+
             var results = new List<ComparisonResultDTO>();
 
             foreach (var parameter in request.Parameters)
@@ -33,9 +47,17 @@ namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
                 results.AddRange(result.Data);
             }
 
-            return results.Count > 0
-                ? Result<List<ComparisonResultDTO>>.Success(results)
-                : Result<List<ComparisonResultDTO>>.Failure("Ingen data returnerades, pröva en annan parameter");
+
+
+            if (results.Count > 0)
+            {
+                // Lägg till resultat i cache med en tidsbegränsning (t.ex. 10 minuters livslängd)
+                _cache.Set(cacheKey, results, TimeSpan.FromMinutes(10));
+
+                return Result<List<ComparisonResultDTO>>.Success(results);
+            }
+
+            return Result<List<ComparisonResultDTO>>.Failure("Ingen data returnerades, pröva en annan parameter");
         }
 
 
@@ -316,20 +338,27 @@ namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
                    .Where(r => r.Kommun.Kommun == kommunId)
                    .MaxAsync(r => r.Year);
 
-                return await _context.RealEstateYearlySummary
-                   .Where(r => r.Kommun.Kommun == kommunId && r.Year == year)
-                   .GroupBy(r => r.PropertyType)
-                   .ToDictionaryAsync(
-                       g => g.Key,
-                       g => (decimal)g.Sum(r => r.SalesCount)
-                   );
-            }, "Étt fel uppstod vid hämtning av propertysales");
+
+                var topSales = await _context.RealEstateYearlySummary
+                .Where(r => r.Kommun.Kommun == kommunId && r.Year == year && r.PropertyType != null)
+                .GroupBy(r => r.PropertyType)
+                .Select(g => new
+                {
+                    PropertyType = g.Key,
+                    TotalSalesCount = g.Sum(r => (decimal?)r.SalesCount) ?? 0
+                })
+                .OrderByDescending(x => x.TotalSalesCount)
+                .Take(5)
+                .ToListAsync();
+
+                return topSales.ToDictionary(x => x.PropertyType!, x => x.TotalSalesCount);
+
+
+            }, "Ett fel uppstod vid hämtning av propertysales");
+
         }
 
-        private async Task<Result<T>> ExecuteSafelyAsync<T>(
-            Func<Task<T>> action,
-            string customMessage,
-            [CallerMemberName] string methodName = "")
+        private async Task<Result<T>> ExecuteSafelyAsync<T>(Func<Task<T>> action, string customMessage, [CallerMemberName] string methodName = "")
         {
             try
             {
@@ -349,25 +378,67 @@ namespace FastighetsKompassen.API.Features.Comparison.Query.GetComparisonResult
         }
 
 
-        private ComparisonResultDTO CreateComparisonResult(
-            ComparisonParameter parameter,
+        private ComparisonResultDTO CreateComparisonResult(ComparisonParameter parameter,
             string firstKommun,
             string secondKommun,
             decimal kommunFirstValue,
             decimal kommunSecondValue,
             string fieldName)
         {
+            decimal percentageDifference;
+            decimal timesLarger;
+
+            if (kommunFirstValue == 0 && kommunSecondValue == 0)
+            {
+                percentageDifference = 0;
+                timesLarger = 1; // Ingen skillnad
+            }
+            else if (kommunFirstValue == 0)
+            {
+                percentageDifference = -100;
+                timesLarger = 0; // Kommun 1 har 0, så den är 0 gånger större
+            }
+            else if (kommunSecondValue == 0)
+            {
+                percentageDifference = 100;
+                timesLarger = decimal.MaxValue; // Kommun 2 har 0, så Kommun 1 är "oändligt" större
+            }
+            else
+            {
+                // Beräkna procentuell skillnad baserat på det mindre värdet
+                decimal maxValue = Math.Max(kommunFirstValue, kommunSecondValue);
+                decimal minValue = Math.Min(kommunFirstValue, kommunSecondValue);
+
+                percentageDifference = ((maxValue - minValue) / minValue) * 100;
+
+                // Beräkna hur många gånger större den större kommunen är
+                timesLarger = maxValue / minValue;
+
+                // Om kommunSecondValue är större än kommunFirstValue, ska skillnaden vara positiv
+                if (kommunSecondValue > kommunFirstValue)
+                {
+                    percentageDifference = Math.Abs(percentageDifference);
+                }
+                else
+                {
+                    percentageDifference = -Math.Abs(percentageDifference);
+                }
+            }
+
             return new ComparisonResultDTO
             {
-                Parameter = parameter.ToString(), // Enum converted to its name
+                Parameter = parameter.ToString(),
                 Municipality1 = firstKommun,
                 Municipality2 = secondKommun,
                 Value1 = kommunFirstValue,
                 Value2 = kommunSecondValue,
                 Difference = kommunFirstValue - kommunSecondValue,
-                PercentageDifference = kommunSecondValue != 0 ? ((kommunFirstValue - kommunSecondValue) / kommunSecondValue) * 100 : 0,
-                FieldName = fieldName // Optional field for additional details
+                PercentageDifference = percentageDifference,
+                TimesLarger = timesLarger, // Nytt fält för hur många gånger större den större kommunen är
+                FieldName = fieldName
             };
         }
+
+
     }
 }

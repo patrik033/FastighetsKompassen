@@ -49,7 +49,15 @@ namespace FastighetsKompassen.API.Features.Statistics.Commands.GetKommunTrends
                 var crimeData = await _context.PoliceEventSummary
                     .Where(pe => pe.Kommun.Kommun == request.KommunId && pe.Year == year)
                     .GroupBy(pe => pe.EventType)
-                    .Select(g => new { EventType = g.Key, Count = g.Sum(pe => (decimal?)pe.EventCount) ?? 0 })
+                    .Select(g => new 
+                    { 
+                        EventType = g.Key,
+                        Count = g.Sum(pe => (decimal?)pe.EventCount) ?? 0 
+                    })
+                    .OrderByDescending(ev => ev.Count)
+                    .Take(5)
+                   // .OrderBy(ev => ev.Count).Take(10)
+                    
                     .ToListAsync();
 
                 // Hämta skolresultat (år 9 och 6)
